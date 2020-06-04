@@ -22,6 +22,9 @@
     <Content Include="Config\XComEngine.ini" />
     <Content Include="Config\XComGame.ini" />
     <Content Include="Localization\XComGame.int" />
+    <Content Include="Src\LWotCSquadsForControllers\Classes\UIScreenListener_RobojumperSquadSelect.uc">
+      <SubType>Content</SubType>
+    </Content>
     <Content Include="Src\LWotCSquadsForControllers\Classes\X2DownloadableContentInfo_LWotCSquadsForControllers.uc" />
   </ItemGroup>
   <Import Project="$(MSBuildLocalExtensionPath)\XCOM2.targets" />
