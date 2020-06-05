@@ -1,5 +1,7 @@
 class UISquadMenu extends UIScreen;
 
+// KDM : DO I NEED TO DEAL WITH THE DELAYED INIT STUFF ?????
+
 var localized string TitleStr;
 
 var int PanelH, PanelW;
@@ -141,7 +143,8 @@ simulated function PopulateList()
 	for (i = 0; i < SquadRefs.Length; i++)
 	{
 		ListItem = Spawn(class'UISquadMenu_ListItem',List.itemContainer);
-		ListItem.InitListItem(SquadRefs[i], self);
+		ListItem.InitListItem(SquadRefs[i], false, self);
+		ListItem.Update();
 	}
 }
 
@@ -165,6 +168,77 @@ function TitleStrSizeRealized()
 	RightDiagonals.SetHeaderWidth(DiagonalsWidth + 10, true);
 }
 
+
+simulated function OnSquadSelected(StateObjectReference SelectedSquadRef)
+{
+	local robojumper_UISquadSelect SquadSelectScreen;
+	local UISquadMenu_ListItem CurrentSquadIcon;
+	local XComHQPresentationLayer HQPres;
+
+	HQPres = `HQPRES;
+	SquadSelectScreen = robojumper_UISquadSelect(HQPres.ScreenStack.GetScreen(class'robojumper_UISquadSelect'));
+
+	SetSquad(SelectedSquadRef);
+
+	CurrentSquadIcon = UISquadMenu_ListItem(SquadSelectScreen.GetChildByName('CurrentSquadIconForController', false));
+	if (CurrentSquadIcon != none)
+	{
+		CurrentSquadIcon.SquadRef = SelectedSquadRef;
+		CurrentSquadIcon.Update();
+	}
+	
+	if (SquadSelectScreen != none)
+	{
+		// KDM : DO WE NEED TO DO BOTH OF THESE ? INVESTIGATE
+		SquadSelectScreen.UpdateData();
+		SquadSelectScreen.SignalOnReceiveFocus();
+	}
+
+	// KDM : Once a squad has been selected, just close the menu; I can't see any reason why someone would select several
+	// squads within this menu screen.
+	CloseScreen();
+}
+
+// KDM : This is LW2 code from UISquadContainer.
+function SetSquad(optional StateObjectReference NewSquadRef)
+{
+	local StateObjectReference CurrentSquadRef;
+	local XComGameState UpdateState;
+	local XComGameState_HeadquartersXCom XComHQ;
+	local XComGameState_LWPersistentSquad SquadState;
+	local XComGameState_LWSquadManager SquadManager, UpdatedSquadManager;
+	
+	XComHQ = `XCOMHQ;
+	SquadManager = `LWSQUADMGR;
+
+	if (NewSquadRef.ObjectID > 0)
+	{
+		CurrentSquadRef = NewSquadRef;
+	}
+	else
+	{
+		CurrentSquadRef = SquadManager.LaunchingMissionSquad;
+	}
+
+	if (CurrentSquadRef.ObjectID > 0)
+	{
+		SquadState = XComGameState_LWPersistentSquad(`XCOMHISTORY.GetGameStateForObjectID(CurrentSquadRef.ObjectID));
+	}
+	else
+	{
+		SquadState = SquadManager.AddSquad(, XComHQ.MissionRef);
+	}
+
+	UpdateState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Update Launching Mission Squad");
+	UpdatedSquadManager = XComGameState_LWSquadManager(UpdateState.CreateStateObject(SquadManager.Class, SquadManager.ObjectID));
+	UpdateState.AddStateObject(UpdatedSquadManager);
+	UpdatedSquadManager.LaunchingMissionSquad = SquadState.GetReference();
+	UpdateState.AddStateObject(XComHQ);
+	`GAMERULES.SubmitGameState(UpdateState);
+
+	SquadState.SetSquadCrew(, false /* bOnMissionSoldiers */ ,false /* bForDisplayOnly */);
+}
+
 simulated function bool OnUnrealCommand(int cmd, int arg)
 {
 	local bool bHandled;
@@ -184,7 +258,7 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 
 	switch (cmd)
 	{
-		case class'UIUtilities_Input'.const.FXS_BUTTON_B:
+		case class'UIUtilities_Input'.static.GetBackButtonInputCode() :
 			CloseScreen();
 			break;
 
