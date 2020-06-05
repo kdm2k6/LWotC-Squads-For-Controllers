@@ -1,0 +1,1 @@
+class UISquadMenu_ListItem extends UIPanel;
