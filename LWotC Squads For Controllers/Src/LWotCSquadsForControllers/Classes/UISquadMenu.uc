@@ -82,10 +82,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	List.InitList(, BorderPadding, NextY, PanelW - BorderPadding * 2, PanelH - NextY - BorderPadding);
 	
 	RefreshData();
-	//UpdateData();
-	//UpdateList();
-	//AddListButtons();
-
+	
 	//UpdateNavHelp();
 }
 
@@ -144,9 +141,7 @@ simulated function PopulateList()
 	for (i = 0; i < SquadRefs.Length; i++)
 	{
 		ListItem = Spawn(class'UISquadMenu_ListItem',List.itemContainer);
-		// kItem.OnDimensionsRealized = UpdateItemWidths;
-		// KDM TO DO : WORKING ON IT
-		// ListItem.InitSquadListItem_Small(SquadRefs[i],, self);
+		ListItem.InitListItem(SquadRefs[i], self);
 	}
 }
 
