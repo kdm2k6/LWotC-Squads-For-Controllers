@@ -1,0 +1,22 @@
+class UIScreenListener_UIPersonnel_SquadBarracks extends UIScreenListener;
+
+event OnInit(UIScreen Screen)
+{
+	local UIPersonnel_SquadBarracks SquadBarracks;
+	local UIPersonnel_SquadBarracks_ForControllers SquadBarracksForControllers;
+	local XComHQPresentationLayer HQPres;
+
+	HQPres = `HQPRES;
+	SquadBarracks = UIPersonnel_SquadBarracks(Screen);
+
+	SquadBarracksForControllers = HQPres.Spawn(class'UIPersonnel_SquadBarracks_ForControllers', HQPres);
+	SquadBarracksForControllers.bSelectSquad = SquadBarracks.bSelectSquad; // I THINK I NEED TO DO THIS IF I WILL USE bSELECTSQUAD
+	
+	HQPres.ScreenStack.Pop(SquadBarracks);
+	HQPres.ScreenStack.Push(SquadBarracksForControllers);
+}
+
+defaultproperties
+{
+	ScreenClass = class'UIPersonnel_SquadBarracks';
+}

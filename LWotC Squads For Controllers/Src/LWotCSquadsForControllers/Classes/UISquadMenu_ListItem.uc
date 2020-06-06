@@ -22,14 +22,19 @@ function StartDelayedInit()
 {
 	InitListItem(, true);
 	Update();
-	SetPosition(1150, 50); // KDM TEMP VARIABLE
+	SetPosition(1150, 50); // KDM : TEMP LOCATION UNTIL NORMAL ONE IS REMOVED
 }
 
 simulated function InitListItem(optional StateObjectReference _SquadRef, optional bool IgnoreSquadRef = false, optional UISquadMenu _OwningMenu)
 {
 	local int ImageSize, TextX, TextWidth;
 
-	if (!IgnoreSquadRef) SquadRef = _SquadRef;
+	// KDM : When used as a separate UI element to show the current squad, we need to set the squad reference first before
+	// calling InitListItem() on a delay. In that case, we don't want to overwrite the squad reference.
+	if (!IgnoreSquadRef) 
+	{
+		SquadRef = _SquadRef;
+	}
 	OwningMenu = _OwningMenu;
 
 	InitPanel(); 
@@ -70,7 +75,10 @@ simulated function Update()
 
 	SquadState = XComGameState_LWPersistentSquad(`XCOMHISTORY.GetGameStateForObjectID(SquadRef.ObjectID));
 	
-	if (SquadState == none) return;
+	if (SquadState == none)
+	{
+		return;
+	}
 
 	SquadImage.LoadImage(SquadState.GetSquadImagePath());
 
@@ -131,9 +139,6 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 
 	return bHandled || super.OnUnrealCommand(cmd, arg);
 }
-
-	
-
 
 defaultproperties
 {

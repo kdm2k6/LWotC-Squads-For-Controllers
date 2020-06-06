@@ -17,6 +17,7 @@ event OnInit(UIScreen Screen)
 
 	HQPres.ScreenStack.SubscribeToOnInputForScreen(Screen, OnRobojumperSquadSelectClick);
 
+	// KDM : A UI element which shows the current squad, on the squad select screen.
 	CurrentSquadIcon = Screen.Spawn(class'UISquadMenu_ListItem', Screen);
 	CurrentSquadIcon.MCName = 'CurrentSquadIconForController';
 	CurrentSquadIcon.SquadRef = `LWSQUADMGR.LaunchingMissionSquad;
@@ -38,7 +39,7 @@ simulated function bool OnRobojumperSquadSelectClick(UIScreen Screen, int cmd, i
 
 	HQPres = `HQPRES;
 
-	// KDM : Left stick click brings up the squad menu
+	// KDM : Left stick click brings up the squad menu.
 	if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_L3)
 	{
 		SquadMenu = HQPres.Spawn(class'UISquadMenu', HQPres);

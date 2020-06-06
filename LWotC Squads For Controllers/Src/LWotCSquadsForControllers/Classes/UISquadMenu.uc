@@ -1,6 +1,6 @@
 class UISquadMenu extends UIScreen;
 
-// KDM : DO I NEED TO DEAL WITH THE DELAYED INIT STUFF ?????
+// TO DO : NAV STUFF
 
 var localized string TitleStr;
 
@@ -34,7 +34,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	super.InitScreen(InitController, InitMovie, InitName);
 
 	// KDM : Container which will hold our UI components : it's invisible.
-	MainPanel = Spawn(class 'UIPanel', self);
+	MainPanel = Spawn(class'UIPanel', self);
 	MainPanel.bIsNavigable = false;
 	MainPanel.InitPanel();
 	MainPanel.SetPosition((Movie.UI_RES_X / 2) - (PanelW / 2), (Movie.UI_RES_Y / 2) - (PanelH / 2));
@@ -85,12 +85,12 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	
 	RefreshData();
 	
-	//UpdateNavHelp();
+	// UpdateNavHelp(); KDM TO DO
 }
 
 simulated function RefreshData()
 {
-	// KDM : Fill in the SquadRefs array; most of this code is from UISquad_DropDown.UpdateData().
+	// KDM : UpdateData() fills in the SquadRefs array; most of this code is from UISquad_DropDown.UpdateData().
 	UpdateData();
 	UpdateList();
 }
@@ -286,46 +286,6 @@ defaultproperties
 
 
 /*
-function AddListButtons()
-{
-	local UIButton TheButton;
-
-	// KDM : Requires Robojumper's Squad Select or it will crash.
-	TheButton = AddButton('UnequipBarracks', class'robojumper_UISquadSelect'.default.strUnequipBarracks, OnClickBtn);
-	if (COLOUR_CODE_BTNS) TheButton.SetWarning(true);
-	TheButton = AddButton('UnequipSquad', class'robojumper_UISquadSelect'.default.strUnequipSquad, OnClickBtn);
-	if (COLOUR_CODE_BTNS) TheButton.SetWarning(true);
-
-	// KDM : Normal WotC buttons.
-	AddButton('StripItemsBtn', class'UISquadSelect'.default.m_strStripItems, OnClickBtn);
-	AddButton('StripGearBtn', class'UISquadSelect'.default.m_strStripGear, OnClickBtn);
-	AddButton('StripWeaponsBtn', class'UISquadSelect'.default.m_strStripWeapons, OnClickBtn);
-
-	// KDM : Requires LWotC or it will crash.
-	TheButton = AddButton('ClearSquadBtn', class'X2EventListener_Missions'.default.m_strClearSquad, OnClickBtn);
-	if (COLOUR_CODE_BTNS) TheButton.SetBad(true);
-	TheButton = AddButton('AutoFillSquadBtn', class'X2EventListener_Missions'.default.m_strAutofillSquad, OnClickBtn);
-	if (COLOUR_CODE_BTNS) TheButton.SetBad(true);
-}
-
-simulated function UIButton AddButton(name ButtonName, string ButtonLabel, optional delegate<OnClickedDelegate> OnClicked)
-{
-	local UIButton TheButton;
-
-	TheButton = UIButton(List.CreateItem(class'UIButton'));
-	TheButton.ResizeTotext = false;
-	TheButton.InitButton(ButtonName, CAPS(ButtonLabel), OnClicked, eUIButtonStyle_NONE);
-	TheButton.SetFontSize(22);
-	TheButton.SetWidth(List.Width);
-
-	return TheButton;
-}
-
-simulated function ClearList()
-{
-	List.ClearItems();
-}
-
 simulated function UpdateNavHelp()
 {
 	local UINavigationHelp NavHelp;
