@@ -1,2 +1,9 @@
 [UISquadMenu]
 TitleStr="Squad Menu"
+
+[UIPersonnel_SquadBarracks_ForControllers]
+TitleStr="SQUAD : <XGParam:StrValue0>"
+SubtitleStr="[<XGParam:IntValue0>/<XGParam:IntValue1>]"
+NoSquadsStr="NONE"
+
+;strSquadBarrackTitle="SQUAD: <XGParam:StrValue0>"

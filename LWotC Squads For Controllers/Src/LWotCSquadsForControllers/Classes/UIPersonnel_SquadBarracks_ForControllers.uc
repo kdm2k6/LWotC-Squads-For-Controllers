@@ -3,6 +3,10 @@
 
 class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel;
 
+var localized string TitleStr, SubtitleStr, NoSquadsStr;
+
+var int CurrentSquadIndex;
+
 var bool bSelectSquad;
 var int PanelW, PanelH;
 
@@ -120,9 +124,59 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	AvailableSoldiersTab.SetPosition(XLoc, YLoc);
 	AvailableSoldiersTab.SetWidth(WidthVal);
 	
+	// KDM : If at least 1 squad exists, select the 1st one by setting CurrentSquadIndex to 0.
+	// If no squads exist, signify this by setting CurrentSquadIndex to -1.
+	CurrentSquadIndex = (GetTotalSquads() == 0) ? -1 : 0;
+
+	UpdateSquadUI();
 	
 }
 
+simulated function UpdateSquadUI()
+{
+	local bool NoSquads, NoSquadSelected;
+	local string SquadTitle, SquadSubtitle;
+	local XComGameState_LWPersistentSquad CurrentSquadState;
+	local XGParamTag ParamTag;
+	
+	NoSquads = (GetTotalSquads() == 0) ? true : false;
+	
+	// KDM : Set the squad title and subtitle; title is of the form 'SQUAD : NAME_OF_SQUAD' while subtitle is of the form '[1/4]'.
+	ParamTag = XGParamTag(`XEXPANDCONTEXT.FindTag("XGParam"));
+	ParamTag.StrValue0 = (NoSquads) ? NoSquadsStr : CAPS(SquadState.sSquadName);
+	SquadTitle = `XEXPAND.ExpandString(TitleStr);
+
+	if (GetTotalSquads() == 0)
+	{
+		
+		
+		ParamTag = XGParamTag(`XEXPANDCONTEXT.FindTag("XGParam"));
+		ParamTag.IntValue0 = 0;
+		ParamTag.IntValue1 = 0;
+		Subtitle = `XEXPAND.ExpandString(SubtitleStr);
+
+		SquadHeader.SetText(Title, Subtitle);
+	}
+	//var localized string TitleStr, SubtitleStr, NoSquadsStr;
+}
+
+simulated function XComGameState_LWPersistentSquad GetCurrentSquad()
+{
+	local StateObjectReference CurrentSquadRef;
+	
+	if (CurrentSquadIndex < 0)
+	{
+		return none;
+	}
+	
+	CurrentSquadRef = `LWSQUADMGR.Squads[CurrentSquadIndex];
+	return XComGameState_LWPersistentSquad(`XCOMHISTORY.GetGameStateForObjectID(CurrentSquadRef.ObjectID));
+}
+
+simulated function int GetTotalSquads()
+{
+	return `LWSQUADMGR.Squads.Length;
+}
 
 
 simulated function bool OnUnrealCommand(int cmd, int arg)
@@ -134,10 +188,9 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 		return false;
 	}
 
-	`log("KDM **** :" @ self.Movie.GetPathUnderMouse());
+	//`log("KDM **** :" @ self.Movie.GetPathUnderMouse());
 	//`log("KDM *** :" @ TempPanel.X @ TempPanel.Y @ TempPanel.Width @ TempPanel.Height);
-	`log("KDM *** :" @ MC.GetNum("SoldierListBG._x") @ MC.GetNum("SoldierListBG._y") @ MC.GetNum("SoldierListBG._width") @ 
-		MC.GetNum("SoldierListBG._height"));
+	//`log("KDM *** :" @ MC.GetNum("SoldierListBG._x") @ MC.GetNum("SoldierListBG._y") @ MC.GetNum("SoldierListBG._width") @ MC.GetNum("SoldierListBG._height"));
 	
 
 	bHandled = true;
@@ -275,6 +328,8 @@ defaultproperties
 	
 	m_iMaskWidth = 961;
 	m_iMaskHeight = 658;
+
+	CurrentSquadIndex = -1;
 }
 
 // Looks like UIPersonnel size is
