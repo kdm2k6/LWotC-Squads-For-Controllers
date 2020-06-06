@@ -1,23 +1,37 @@
+// MC.ChildFunctionVoid("personnelSort", "MoveToHighestDepth");
+// Default flash background is - X/Y/WIDTH/HEIGHT : 480.0000 90.0000 1000.0000 895.9500
+
 class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel;
 
 var bool bSelectSquad;
-var int PanelW, PanelH, TopBG_H;
+var int PanelW, PanelH;
 
-var int BorderPadding, FontSize;
+var int BorderPadding, FontSize, SquadIconSize;
 
 var UIPanel MainPanel;
-var UIBGBox TopBG, BottomBG;
+var UIBGBox SquadBG;
+var UIX2PanelHeader SquadHeader;
+var UIPanel DividerLine;
 var UIImage CurrentSquadIcon;
-var UIScrollingText CurrentSquadName, CurrentSquadStatus, CurrentSquadBio;
+var UIScrollingText CurrentSquadStatus;
+var UITextContainer CurrentSquadBio;
 var UIList SoldierIconList;
 var UIButton SquadSoldiersTab, AvailableSoldiersTab;
 
+simulated function OnInit()
+{
+	super.OnInit();
+
+	// KDM : Hide the pre-built flash background panel; we use our own custom UI.
+	MC.ChildFunctionVoid("SoldierListBG", "Hide");
+}
+
 simulated function InitScreen(XComPlayerController InitController, UIMovie InitMovie, optional name InitName)
 {
+	// TopBG_H was 300
 	local int AvailableW, XLoc, YLoc, HeightVal, WidthVal;
-	local int SquadIconSize;
 
-	super(UIScreen).InitScreen(InitController, InitMovie, InitName); // KDM : CONTROLLERIZED JUST CALLS SUPER - WAS THIS A MISTAKE ?
+	super(UIScreen).InitScreen(InitController, InitMovie, InitName);
 
 	// KDM : Container which will hold our UI components : it's invisible.
 	MainPanel = Spawn(class'UIPanel', self);
@@ -25,240 +39,124 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	MainPanel.InitPanel();
 	MainPanel.SetPosition((Movie.UI_RES_X / 2) - (PanelW / 2), (Movie.UI_RES_Y / 2) - (PanelH / 2));
 
-	// KDM : Background rectangle on top.
-	TopBG = Spawn(class'UIBGBox', MainPanel);
-	TopBG.LibID = class'UIUtilities_Controls'.const.MC_X2Background;
-	TopBG.InitBG(, 0, 0, PanelW, TopBG_H);
+	// KDM : Background rectangle.
+	SquadBG = Spawn(class'UIBGBox', MainPanel);
+	SquadBG.LibID = class'UIUtilities_Controls'.const.MC_X2Background;
+	SquadBG.InitBG(, 0, 0, PanelW, PanelH);
 
-	// KDM : Background rectangle on bottom.
-	BottomBG = Spawn(class'UIBGBox', MainPanel);
-	BottomBG.LibID = class'UIUtilities_Controls'.const.MC_X2Background;
-	BottomBG.InitBG(, 0, TopBG_H, PanelW, PanelH - TopBG_H);
-
+	// KDM : Header which displays the current squad's name.
+	XLoc = BorderPadding;
+	YLoc = BorderPadding;
+	WidthVal = PanelW - (BorderPadding * 2);
+	SquadHeader = Spawn(class'UIX2PanelHeader', MainPanel);
+	SquadHeader.bIsNavigable = false;
+	SquadHeader.InitPanelHeader(, "Current Squad Name");
+	SquadHeader.SetPosition(XLoc, YLoc);
+	SquadHeader.SetHeaderWidth(WidthVal);
+	
+	// KDM : Thin dividing line.
+	XLoc = BorderPadding;
+	YLoc = SquadHeader.Y + 45;
+	WidthVal = PanelW - (BorderPadding * 2);
+	DividerLine = Spawn(class'UIPanel', MainPanel);
+	DividerLine.bIsNavigable = false;
+	DividerLine.LibID = class'UIUtilities_Controls'.const.MC_GenericPixel;
+	DividerLine.InitPanel();
+	DividerLine.SetPosition(XLoc, YLoc);
+	DividerLine.SetWidth(WidthVal);
+	DividerLine.SetAlpha(30);
+	
 	// KDM : Current squad's icon.
 	XLoc = BorderPadding;
-	YLoc = BorderPadding;
-	SquadIconSize = TopBG_H - (BorderPadding * 2);
+	YLoc = DividerLine.Y + 10;
 	CurrentSquadIcon = Spawn(class'UIImage', MainPanel);
 	CurrentSquadIcon.InitImage();
-	CurrentSquadIcon.SetSize(SquadIconSize, SquadIconSize);
 	CurrentSquadIcon.SetPosition(XLoc, YLoc);
-
-	AvailableW = PanelW - SquadIconSize - (BorderPadding * 4);
-
-	// KDM : Current squad's name.
-	XLoc = CurrentSquadIcon.X + CurrentSquadIcon.Width + BorderPadding;
-	YLoc = BorderPadding;
-	WidthVal = int(float(AvailableW) * 0.5);
-	CurrentSquadName = Spawn(class'UIScrollingText', MainPanel);
-	CurrentSquadName.InitScrollingText(, "Setup Text", WidthVal, XLoc, YLoc);
+	CurrentSquadIcon.SetSize(SquadIconSize, SquadIconSize);
 	
 	// KDM : Current squad's status.
-	XLoc = CurrentSquadName.X + CurrentSquadName.Width + BorderPadding;
-	YLoc = BorderPadding;
-	WidthVal = int(float(AvailableW) * 0.5);
+	XLoc = CurrentSquadIcon.X + CurrentSquadIcon.Width + BorderPadding;
+	YLoc = DividerLine.Y + 30;
+	WidthVal = PanelW - SquadIconSize - (BorderPadding * 3);
 	CurrentSquadStatus = Spawn(class'UIScrollingText', MainPanel);
-	CurrentSquadStatus.InitScrollingText(, "Setup Text", WidthVal, XLoc, YLoc);
+	CurrentSquadStatus.InitScrollingText(, "Current Squad Status", WidthVal, XLoc, YLoc);
 
 	// KDM : List of icons representing soldiers in the squad.
-	XLoc = BorderPadding;
-	YLoc = CurrentSquadName.Y + FontSize + 10;
+	XLoc = CurrentSquadStatus.X;
+	YLoc = CurrentSquadStatus.Y + 30;
 	WidthVal = PanelW - SquadIconSize - (BorderPadding * 3);
 	HeightVal = 24;
 	SoldierIconList = Spawn(class'UIList', MainPanel);
-	SoldierIconList.InitList(,,,,, true);
-	SoldierIconList.SetSize(WidthVal, HeightVal);
-	SoldierIconList.SetPosition(XLoc, YLoc);
+	SoldierIconList.InitList(, XLoc, YLoc, WidthVal, HeightVal, true);
 
 	// KDM : Squad mission information & biography.
-	XLoc = BorderPadding;
+	XLoc = CurrentSquadStatus.X;
 	YLoc = SoldierIconList.Y + SoldierIconList.Height + 10;
 	WidthVal = PanelW - SquadIconSize - (BorderPadding * 3);
-	CurrentSquadBio = Spawn(class'UIScrollingText', MainPanel);
-	CurrentSquadBio.InitScrollingText(, "Setup Text", WidthVal, XLoc, YLoc);
+	HeightVal = 100;
+	CurrentSquadBio = Spawn(class'UITextContainer', MainPanel);
+	CurrentSquadBio.InitTextContainer(, , XLoc, YLoc, WidthVal, HeightVal, false, , true);
+	CurrentSquadBio.SetText("Current Squad Bio");
 
 	AvailableW = PanelW - (BorderPadding * 3);
 
 	// KDM : Squad soldiers tab.
 	XLoc = BorderPadding;
-	YLoc = BottomBG.Y + BorderPadding;
+	YLoc = CurrentSquadIcon.Y + CurrentSquadIcon.Height + BorderPadding;
 	WidthVal = int(float(AvailableW) * 0.5);
 	SquadSoldiersTab = Spawn(class'UIButton', MainPanel);
 	SquadSoldiersTab.ResizeToText = false;
-	SquadSoldiersTab.InitButton(, "Setup Text", , eUIButtonStyle_NONE);
-	SquadSoldiersTab.SetWidth(WidthVal);
+	SquadSoldiersTab.InitButton(, "Squad soldiers tab", , eUIButtonStyle_NONE);
 	SquadSoldiersTab.SetPosition(XLoc, YLoc);
+	SquadSoldiersTab.SetWidth(WidthVal);
 	
 	// KDM : Available soldiers tab.
 	XLoc = SquadSoldiersTab.X + SquadSoldiersTab.Width + BorderPadding;
-	YLoc = BottomBG.Y + BorderPadding;
+	YLoc = CurrentSquadIcon.Y + CurrentSquadIcon.Height + BorderPadding;
 	WidthVal = int(float(AvailableW) * 0.5);
 	AvailableSoldiersTab = Spawn(class'UIButton', MainPanel);
 	AvailableSoldiersTab.ResizeToText = false;
-	AvailableSoldiersTab.InitButton(, "Setup Text", , eUIButtonStyle_NONE);
-	AvailableSoldiersTab.SetWidth(WidthVal);
+	AvailableSoldiersTab.InitButton(, "Available soldiers tab", , eUIButtonStyle_NONE);
 	AvailableSoldiersTab.SetPosition(XLoc, YLoc);
-
+	AvailableSoldiersTab.SetWidth(WidthVal);
 	
-	/*
-	// KDM : Reposition column header container
-	m_kSoldierSortHeader.SetPosition(SquadSoldiersBtn.X, SquadSoldiersBtn.Y + BottomPanelItemHeight + BottomPanelItemPaddingV);
-	// KDM : Reposition main list
-	m_kList.SetPosition(SquadSoldiersBtn.X, m_kSoldierSortHeader.Y + ColumnHeaderFontSize + 10 + BottomPanelItemPaddingV);
-	m_kList.SetHeight(SquadBottomBG.Height - (m_kList.Y - SquadBottomBG.Y) - BottomPanelEdgePadding);
-
-	ListTitle.Hide();			// KDM : This is created is UIPersonnel (super), but we don't want it here
-	*/
-
-
-	/*local int AvailableW;
-	local int TopPanelItemHeight, TopPanelEdgePadding, TopPanelItemPaddingH, TopPanelItemPaddingV;
-	local int BottomPanelItemHeight, BottomPanelEdgePadding, BottomPanelItemPaddingH, BottomPanelItemPaddingV;
-	local float SquadNamePctW;
-	local string TmpString;
-
-	// KDM : Get font size
-	SquadFontSize = class'UIUtilities_KDM'.const.DEFAULT_NORMAL_FONT_SIZE_KDM + 2;
-
-	PanelW = 1800;									// KDM : Set width
-	PanelH =  970;									// KDM : Set height
 	
-	TopPanelEdgePadding = 10;
-	TopPanelItemPaddingH = 10;
-	TopPanelItemPaddingV = 4;
-	BottomPanelEdgePadding = 10;
-	BottomPanelItemPaddingH = 10;
-	BottomPanelItemPaddingV = 10;
-
-	SquadNamePctW = 0.5;							// KDM : The squad name and squad status are on the same line.
-													// This determines how wide the name text field is compared to the status text field.
-
-	TopPanelItemHeight = SquadFontSize + 10;
-	BottomPanelItemHeight = SquadFontSize + 10;
-
-	super.InitScreen(InitController, InitMovie, InitName);
-
-	NavInfoString = GetNavInfoString();				// KDM : Get navigation info string
-
-	// KDM : Create main squad container panel (centered)
-	SquadMainPanel = Spawn(class'UIPanel', self);
-	SquadMainPanel.bAnimateOnInit = false;
-    SquadMainPanel.InitPanel();
-	SquadMainPanel.SetPosition((Movie.UI_RES_X / 2) - (PanelW / 2),  (Movie.UI_RES_Y / 2) - (PanelH / 2));
-	SquadMainPanel.DisableNavigation();
-
-	// KDM : Create top squad background panel
-    SquadTopBG = Spawn(class'UIBGBox', SquadMainPanel);
-	SquadTopBG.bAnimateOnInit = false;
-	SquadTopBG.LibID = class'UIUtilities_Controls'.const.MC_X2Background;
-	SquadTopBG.InitBG(, 0, 0, PanelW, 2 * TopPanelEdgePadding + 3 * TopPanelItemHeight + 2 * TopPanelItemPaddingV);
-
-	// KDM : Create bottom squad background panel (unused)
-    SquadBottomBG = Spawn(class'UIBGBox', SquadMainPanel);
-	SquadBottomBG.bAnimateOnInit = false;
-	SquadBottomBG.LibID = class'UIUtilities_Controls'.const.MC_X2Background;
-	SquadBottomBG.InitBG(,0 ,SquadTopBG.Y + SquadTopBG.Height, PanelW, PanelH - SquadTopBG.Height);
-	SquadBottomBG.Hide();
-
-	// KDM : Create squad icon
-	SquadIcon = Spawn(class'UIImage', SquadMainPanel);
-	SquadIcon.bAnimateOnInit = false;
-	SquadIcon.InitImage();
-	SquadIcon.SetSize(SquadTopBG.Height - 2 * TopPanelEdgePadding, SquadTopBG.Height - 2 * TopPanelEdgePadding);
-	SquadIcon.SetPosition(SquadTopBG.X + TopPanelEdgePadding, SquadTopBG.Y + TopPanelEdgePadding);
-
-	AvailableW = SquadTopBG.Width - SquadIcon.Width - 2 * TopPanelEdgePadding - 2 * TopPanelItemPaddingH;
-	
-	// KDM : Create squad name label
-	SquadNameLabel = Spawn(class'UIScrollingTextField', SquadMainPanel);
-	SquadNameLabel.bAnimateOnInit = false;
-	SquadNameLabel.InitScrollingText();
-	SquadNameLabel.SetWidth(float(AvailableW) * SquadNamePctW);
-	SquadNameLabel.SetPosition(SquadIcon.X + SquadIcon.Width + TopPanelItemPaddingH, SquadTopBG.Y + TopPanelEdgePadding);
-	
-	// KDM : Create squad status label
-	SquadStatusLabel = Spawn(class'UIScrollingTextField', SquadMainPanel);
-	SquadStatusLabel.bAnimateOnInit = false;
-	SquadStatusLabel.InitScrollingText();
-	SquadStatusLabel.SetWidth(float(AvailableW) * (1.0 - SquadNamePctW));
-	SquadStatusLabel.SetPosition(SquadNameLabel.X + SquadNameLabel.Width + TopPanelItemPaddingH, SquadTopBG.Y + TopPanelEdgePadding);
-	
-	AvailableW = SquadTopBG.Width - SquadIcon.Width - 2 * TopPanelEdgePadding - TopPanelItemPaddingH;
-
-	// KDM : Create squad class icon list
-	ClassIconList = Spawn(class'UIList', SquadMainPanel);
-	ClassIconList.bAnimateOnInit = false;
-	ClassIconList.InitList(,,,,, true);			// KDM : Create a horizontal list
-	ClassIconList.SetSize(AvailableW, TopPanelItemHeight);
-	ClassIconList.SetPosition(SquadNameLabel.X, SquadNameLabel.Y + TopPanelItemHeight + TopPanelItemPaddingV);
-
-	// KDM : Add squad mission info + biography
-	SquadBioLabel = Spawn(class'UIScrollingTextField', SquadMainPanel);
-	SquadBioLabel.bAnimateOnInit = false;
-	SquadBioLabel.InitScrollingText();
-	SquadBioLabel.SetWidth(AvailableW);
-	SquadBioLabel.SetPosition(SquadNameLabel.X, ClassIconList.Y + TopPanelItemHeight + TopPanelItemPaddingV);
-	
-	AvailableW = SquadBottomBG.Width - 2 * BottomPanelEdgePadding - BottomPanelItemPaddingH;
-	
-	// KDM : Add squad soldiers button
-	SquadSoldiersBtn = Spawn(class'UIButton', SquadMainPanel);
-	SquadSoldiersBtn.SetResizeToText(false);
-	SquadSoldiersBtn.bAnimateOnInit = false;
-	SquadSoldiersBtn.InitButton();
-	SquadSoldiersBtn.MC.SetNum("textHeightPadding", 20);
-	SquadSoldiersBtn.SetSize(AvailableW / 2, BottomPanelItemHeight);
-	SquadSoldiersBtn.SetPosition(SquadBottomBG.X + BottomPanelEdgePadding, SquadBottomBG.Y + BottomPanelEdgePadding);
-	TmpString = class'UIUtilities_KDM'.static.Modify_Font("Squad Soldiers", SquadFontSize);
-	SquadSoldiersBtn.SetText(TmpString);
-
-	// KDM : Add available soldiers button
-	AvailableSoldiersBtn = Spawn(class'UIButton', SquadMainPanel);
-	AvailableSoldiersBtn.SetResizeToText(false);
-	AvailableSoldiersBtn.bAnimateOnInit = false;
-	AvailableSoldiersBtn.InitButton();
-	AvailableSoldiersBtn.MC.SetNum("textHeightPadding", 20);
-	AvailableSoldiersBtn.SetSize(AvailableW / 2, BottomPanelItemHeight);
-	AvailableSoldiersBtn.SetPosition(SquadSoldiersBtn.X + SquadSoldiersBtn.Width + BottomPanelItemPaddingH, SquadSoldiersBtn.Y);
-	TmpString = class'UIUtilities_KDM'.static.Modify_Font("Available Soldiers", SquadFontSize);
-	AvailableSoldiersBtn.SetText(TmpString);
-
-	// KDM : Reposition column header container
-	m_kSoldierSortHeader.SetPosition(SquadSoldiersBtn.X, SquadSoldiersBtn.Y + BottomPanelItemHeight + BottomPanelItemPaddingV);
-	// KDM : Reposition main list
-	m_kList.SetPosition(SquadSoldiersBtn.X, m_kSoldierSortHeader.Y + ColumnHeaderFontSize + 10 + BottomPanelItemPaddingV);
-	m_kList.SetHeight(SquadBottomBG.Height - (m_kList.Y - SquadBottomBG.Y) - BottomPanelEdgePadding);
-
-	ListTitle.Hide();			// KDM : This is created is UIPersonnel (super), but we don't want it here
-	
-	// KDM : Create no squads exist label
-	NoSquadsExistLabel = Spawn(class'UIText', SquadMainPanel);
-	NoSquadsExistLabel.bAnimateOnInit = false;
-	NoSquadsExistLabel.InitText();
-	NoSquadsExistLabel.SetWidth(SquadTopBG.Width);
-	NoSquadsExistLabel.SetPosition(SquadTopBG.X, SquadTopBG.Y + (SquadTopBG.Height / 2) - (SquadFontSize / 2));
-	TmpString = class'UIUtilities_KDM'.static.Modify_Font("NO SQUADS EXIST", SquadFontSize);
-	TmpString = "<p align='CENTER'>" $ TmpString $ "</p>";
-	NoSquadsExistLabel.SetHtmlText(TmpString);
-	NoSquadsExistLabel.Hide();
-
-	if (ExternalSelectedSquadRef.ObjectID < 0)
-	{
-		CurrentSquadIndex = -1;
-	}
-	else
-	{
-		CurrentSquadIndex = SelectInitialSquad(ExternalSelectedSquadRef);
-	}
-	
-	ReloadCurrentSquad();		// KDM : Load 1st squad
-	
-	UpdateNavHelp();
-	UpdateUIBasedOnSquadNum();
-	DisableNavigation();*/
 }
 
 
+
+simulated function bool OnUnrealCommand(int cmd, int arg)
+{
+	local bool bHandled;
+
+	if (!CheckInputIsReleaseOrDirectionRepeat(cmd, arg))
+	{
+		return false;
+	}
+
+	`log("KDM **** :" @ self.Movie.GetPathUnderMouse());
+	//`log("KDM *** :" @ TempPanel.X @ TempPanel.Y @ TempPanel.Width @ TempPanel.Height);
+	`log("KDM *** :" @ MC.GetNum("SoldierListBG._x") @ MC.GetNum("SoldierListBG._y") @ MC.GetNum("SoldierListBG._width") @ 
+		MC.GetNum("SoldierListBG._height"));
+	
+
+	bHandled = true;
+
+	switch(cmd)
+	{
+		case class'UIUtilities_Input'.const.FXS_BUTTON_B:
+		case class'UIUtilities_Input'.const.FXS_KEY_ESCAPE:
+		case class'UIUtilities_Input'.const.FXS_R_MOUSE_DOWN:
+			CloseScreen();
+			break;
+
+		default:
+			bHandled = false;
+			break;
+	}
+
+	return bHandled || super(UIScreen).OnUnrealCommand(cmd, arg);
+}
 
 
 /* LW2 VERSION
@@ -369,10 +267,9 @@ defaultproperties
 	PanelW = 961;
 	PanelH = 900;
 
-	TopBG_H = 300;
-
-	BorderPadding = 5;
+	BorderPadding = 10;
 	FontSize = 24;
+	SquadIconSize = 150;
 
 	m_eListType = eUIPersonnel_Soldiers;
 	
