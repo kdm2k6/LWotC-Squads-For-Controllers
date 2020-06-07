@@ -140,7 +140,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	WidthVal = PanelW - SquadIconSize - (BorderPadding * 3);
 	HeightVal = 100;
 	CurrentSquadBio = Spawn(class'UITextContainer', MainPanel);
-	CurrentSquadBio.InitTextContainer(, "", XLoc, YLoc, WidthVal, HeightVal, false, , true);
+	CurrentSquadBio.InitTextContainer(, "", XLoc, YLoc, WidthVal, HeightVal, false, , false);
 	CurrentSquadBio.SetText("Current Squad Bio");
 	
 	AvailableW = PanelW - (BorderPadding * 3);
@@ -547,6 +547,14 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 
 	switch(cmd)
 	{
+		case class'UIUtilities_Input'.const.FXS_VIRTUAL_RSTICK_UP:
+			CurrentSquadBio.OnChildMouseEvent(none, class'UIUtilities_Input'.const.FXS_MOUSE_SCROLL_DOWN);
+			break;
+
+		case class'UIUtilities_Input'.const.FXS_VIRTUAL_RSTICK_DOWN:
+			CurrentSquadBio.OnChildMouseEvent(none, class'UIUtilities_Input'.const.FXS_MOUSE_SCROLL_UP);
+			break;
+
 		// KDM : Left trigger changes squad icon.
 		case class'UIUtilities_Input'.const.FXS_BUTTON_LTRIGGER:
 		case class'UIUtilities_Input'.const.FXS_KEY_Z:
