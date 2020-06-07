@@ -4,6 +4,7 @@
 class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel;
 
 // KDM TO DO : IF NO SQUAD'S EXIST
+// Probably make a function like : IsCurrentSquadValid() - returns false if no squads or selected index is -1
 
 var localized string TitleStr, NoSquadsStr, DashesStr, StatusStr, MissionsStr, BiographyStr;
 
@@ -164,7 +165,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	
 	// KDM : If at least 1 squad exists, select the 1st one by setting CurrentSquadIndex to 0.
 	// If no squads exist, signify this by setting CurrentSquadIndex to -1.
-	CurrentSquadIndex = (NoSquadsExist()) ? -1 : 0;
+	CurrentSquadIndex = (SquadsExist()) ? 0 : -1;
 
 	UpdateSquadUI();
 	
@@ -178,7 +179,7 @@ simulated function UpdateSquadUI()
 	local XComGameState_LWPersistentSquad CurrentSquadState;
 	local XGParamTag ParamTag;
 	
-	NoSquads = NoSquadsExist();
+	NoSquads = !SquadsExist();
 	CurrentSquadState = GetCurrentSquad();
 
 	// KDM : If no squads exist set up the UI a little differently, then exit.
@@ -208,10 +209,11 @@ simulated function UpdateSquadUI()
 	// KDM : Set the squad status; it will be wither 'ON MISSION' or 'AVAILABLE'.
 	SquadStatus = (CurrentSquadState.IsDeployedOnMission()) ? class'UISquadListItem'.default.sSquadOnMission : class'UISquadListItem'.default.sSquadAvailable;
 	TextState = (CurrentSquadState.IsDeployedOnMission()) ? eUIState_Warning : eUIState_Good;
-	SquadStatus = class'UIUtilities_Text'.static.GetColoredText(SquadStatus, TextState, 24); 
+	SquadStatus = class'UIUtilities_Text'.static.GetColoredText(SquadStatus, TextState); 
 	ParamTag = XGParamTag(`XEXPANDCONTEXT.FindTag("XGParam"));
 	ParamTag.StrValue0 = SquadStatus;
 	SquadStatus = `XEXPAND.ExpandString(StatusStr);
+	SquadStatus = class'UIUtilities_Text'.static.GetSizedText(SquadStatus, 24);
 	CurrentSquadStatus.SetHTMLText(SquadStatus);
 	
 	// KDM : Set the squad's mission count; it will be of the form 'Missions : 1'.
@@ -219,7 +221,6 @@ simulated function UpdateSquadUI()
 	ParamTag.IntValue0 = CurrentSquadState.iNumMissions;
 	SquadMissions = `XEXPAND.ExpandString(MissionsStr);
 	SquadMissions = class'UIUtilities_Text'.static.GetColoredText(SquadMissions, eUIState_Normal, 24, "RIGHT"); 
-	//SquadMissions = class'UIUtilities_Text'.static.AlignRight(SquadMissions);
 	CurrentSquadMissions.SetHTMLText(SquadMissions);
 	
 	// KDM : Update the soldier icon list.
@@ -342,9 +343,14 @@ simulated function XComGameState_LWPersistentSquad GetCurrentSquad()
 	return XComGameState_LWPersistentSquad(`XCOMHISTORY.GetGameStateForObjectID(CurrentSquadRef.ObjectID));
 }
 
-simulated function bool NoSquadsExist()
+simulated function bool SquadsExist()
 {
-	return (GetTotalSquads() == 0) ? true : false;
+	return (GetTotalSquads() == 0) ? false : true;
+}
+
+simulated function bool CurrentSquadIsValid()
+{
+	return (SquadsExist() && (CurrentSquadIndex >= 0) && (CurrentSquadIndex < GetTotalSquads()));
 }
 
 simulated function int GetTotalSquads()
@@ -354,19 +360,90 @@ simulated function int GetTotalSquads()
 
 simulated function NextSquad()
 {
+	if (!CurrentSquadIsValid()) return;
+
 	CurrentSquadIndex = ((CurrentSquadIndex + 1) >=  GetTotalSquads()) ? 0 : CurrentSquadIndex + 1;
 	UpdateSquadUI();
 }
 
 simulated function PrevSquad()
 {
+	if (!CurrentSquadIsValid()) return;
+
 	CurrentSquadIndex = ((CurrentSquadIndex - 1) < 0) ? (GetTotalSquads() - 1) : CurrentSquadIndex - 1;
 	UpdateSquadUI();
 }
 
+simulated function CreateSquad()
+{
+	local int TotalSquads;
+
+	TotalSquads = GetTotalSquads();
+	
+	// KDM : Don't store `LWSQUADMGR in a variable and access it after calling CreateEmptySquad(); the reference has become stale !
+	`LWSQUADMGR.CreateEmptySquad();
+
+	// KDM : Since we added 1 squad above, TotalSquads is now the 'index' of the last squad in the array; the squad we just added.
+	CurrentSquadIndex = TotalSquads;
+	UpdateSquadUI();
+}
+
+simulated function DeleteSelectedSquad()
+{
+	local TDialogueBoxData DialogData;
+	local XComGameState_LWPersistentSquad CurrentSquadState;
+	
+	if (!CurrentSquadIsValid()) return;
+
+	CurrentSquadState = GetCurrentSquad();
+
+	// LW2 : Don't delete a squad if it is on a mission.
+	if (!(CurrentSquadState.bOnMission || (CurrentSquadState.CurrentMission.ObjectID > 0)))
+	{
+		DialogData.eType = eDialog_Normal;
+		DialogData.strTitle = class'UIPersonnel_SquadBarracks'.default.strDeleteSquadConfirm;
+		DialogData.strText = class'UIPersonnel_SquadBarracks'.default.strDeleteSquadConfirmDesc;
+		DialogData.fnCallback = OnDeleteSelectedSquadCallback;
+		DialogData.strAccept = class'UIDialogueBox'.default.m_strDefaultAcceptLabel;
+		DialogData.strCancel = class'UIDialogueBox'.default.m_strDefaultCancelLabel;
+		Movie.Pres.UIRaiseDialog(DialogData);
+	}
+}
+
+simulated function OnDeleteSelectedSquadCallback(Name eAction)
+{
+	local int TotalSquads;
+	local StateObjectReference CurrentSquadRef;
+
+	if (eAction == 'eUIAction_Accept')
+	{
+		CurrentSquadRef = `LWSQUADMGR.Squads[CurrentSquadIndex];
+
+		// KDM : Don't store `LWSQUADMGR in a variable and access it after calling RemoveSquadByRef(); the reference has become stale !
+		`LWSQUADMGR.RemoveSquadByRef(CurrentSquadRef);
+		
+		TotalSquads = GetTotalSquads();
+		
+		// KDM : We have 3 possible conditions here :
+		// 1.] If there are no longer any squads, set CurrentSquadIndex to -1.
+		// 2.] If CurrentSquadIndex is equal to the number of squads, we must have deleted the last squad; therefore, select the 'new' last squad.
+		// 3.] Neither condition 1 nor 2 are true; therefore, we can select the squad next to the deleted squad by leaving CurrentSquadIndex unchanged.
+		if (TotalSquads == 0)
+		{
+			CurrentSquadIndex = -1;
+		}
+		else if (CurrentSquadIndex >= TotalSquads)
+		{
+			CurrentSquadIndex = TotalSquads - 1;
+		}
+		
+		UpdateSquadUI();
+	}
+}
 
 simulated function bool OnUnrealCommand(int cmd, int arg)
 {
+	// KDM TEMP : KEYBOARD KEYS
 	local bool bHandled;
 
 	if (!CheckInputIsReleaseOrDirectionRepeat(cmd, arg))
@@ -383,6 +460,18 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 
 	switch(cmd)
 	{
+		// KDM : Y button creates a squad.
+		case class'UIUtilities_Input'.const.FXS_BUTTON_Y:
+		case class'UIUtilities_Input'.const.FXS_KEY_E:
+			CreateSquad();
+			break;
+
+		// KDM : X button deletes the selected squad.
+		case class'UIUtilities_Input'.const.FXS_BUTTON_X:
+		case class'UIUtilities_Input'.const.FXS_KEY_Q:
+			DeleteSelectedSquad();
+			break;
+
 		// KDM : Left trigger selects the previous squad.
 		case class'UIUtilities_Input'.const.FXS_BUTTON_LTRIGGER:
 		case class'UIUtilities_Input'.const.FXS_ARROW_LEFT:
