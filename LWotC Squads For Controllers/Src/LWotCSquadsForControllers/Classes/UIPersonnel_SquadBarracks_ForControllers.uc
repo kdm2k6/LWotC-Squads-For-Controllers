@@ -195,7 +195,7 @@ simulated function UpdateSquadUI()
 	ParamTag = XGParamTag(`XEXPANDCONTEXT.FindTag("XGParam"));
 	ParamTag.IntValue0 = CurrentSquadIndex + 1;
 	ParamTag.IntValue1 = GetTotalSquads();
-	ParamTag.StrValue0 = CAPS(CurrentSquadState.sSquadName);
+	ParamTag.StrValue0 = CurrentSquadState.sSquadName;
 	SquadTitle = `XEXPAND.ExpandString(TitleStr);
 	
 	SquadHeader.SetText(SquadTitle);
@@ -441,6 +441,102 @@ simulated function OnDeleteSelectedSquadCallback(Name eAction)
 	}
 }
 
+simulated function RenameSquad()
+{
+	local TInputDialogData DialogData;
+
+	if (!CurrentSquadIsValid()) return;
+
+	DialogData.strTitle = class'UIPersonnel_SquadBarracks'.default.strRenameSquad;
+	DialogData.iMaxChars = 50;
+	DialogData.strInputBoxText = GetCurrentSquad().sSquadName;
+	DialogData.fnCallback = OnRenameInputBoxClosed;
+
+	`HQPRES.UIInputDialog(DialogData);
+}
+
+function OnRenameInputBoxClosed(string NewSquadName)
+{
+	local XComGameState NewGameState;
+	local XComGameState_LWPersistentSquad CurrentSquadState;
+
+	if (NewSquadName != "")
+	{
+		NewGameState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Renaming Squad");
+		CurrentSquadState = GetCurrentSquad();
+		CurrentSquadState = XComGameState_LWPersistentSquad(NewGameState.CreateStateObject(class'XComGameState_LWPersistentSquad', CurrentSquadState.ObjectID));
+		CurrentSquadState.sSquadName = NewSquadName;
+		CurrentSquadState.bTemporary = false;
+		NewGameState.AddStateObject(CurrentSquadState);
+		`XCOMGAME.GameRuleset.SubmitGameState(NewGameState);
+
+		UpdateSquadUI();
+	}
+}
+
+function EditSquadBiography()
+{
+	local TInputDialogData DialogData;
+
+	if (!CurrentSquadIsValid()) return;
+
+	DialogData.strTitle = class'UIPersonnel_SquadBarracks'.default.strEditBiography;
+	DialogData.iMaxChars = 500;
+	DialogData.strInputBoxText = GetCurrentSquad().sSquadBiography;
+	DialogData.fnCallback = OnEditBiographyInputBoxClosed;
+	DialogData.DialogType = eDialogType_MultiLine;
+
+	Movie.Pres.UIInputDialog(DialogData);
+}
+
+function OnEditBiographyInputBoxClosed(string NewSquadBio)
+{
+	local XComGameState NewGameState;
+	local XComGameState_LWPersistentSquad CurrentSquadState;
+
+	if (NewSquadBio != "")
+	{
+		NewGameState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Edit Squad Biography");
+		CurrentSquadState = GetCurrentSquad();
+		CurrentSquadState = XComGameState_LWPersistentSquad(NewGameState.CreateStateObject(class'XComGameState_LWPersistentSquad', CurrentSquadState.ObjectID));
+		CurrentSquadState.sSquadBiography = NewSquadBio;
+		NewGameState.AddStateObject(CurrentSquadState);
+		`XCOMGAME.GameRuleset.SubmitGameState(NewGameState);
+
+		UpdateSquadUI();
+	}
+}
+
+// LWOTC: Integrated from robojumper's Better Squad Icon Selector mod
+function EditSquadIcon()
+{
+	local UISquadIconSelectionScreen IconSelectionScreen;
+	local XComPresentationLayerBase HQPres;
+	
+	if (CurrentSquadIcon == none) return;
+
+	HQPres = `HQPRES;
+
+	if (HQPres != none && HQPres.ScreenStack.IsNotInStack(class'UISquadIconSelectionScreen'))
+	{
+		IconSelectionScreen = HQPres.Spawn(class'UISquadIconSelectionScreen', HQPres);
+		IconSelectionScreen.BelowScreen = UIPersonnel_SquadBarracks(CurrentSquadIcon.ParentPanel.Screen);
+		IconSelectionScreen.BelowScreen.bHideOnLoseFocus = false;
+		HQPres.ScreenStack.Push(IconSelectionScreen, HQPres.Get2DMovie());
+	}
+}
+
+// KDM : Called by UISquadIconSelectionScreen at the end of SetSquadImage(); just map it to my own function.
+simulated function UpdateSquadHeader()
+{
+	UpdateSquadUI();
+}
+
+// KDM : Called by UISquadIconSelectionScreen at the end of SetSquadImage(); just map it to my own function.
+simulated function UpdateSquadList()
+{
+}
+
 simulated function bool OnUnrealCommand(int cmd, int arg)
 {
 	// KDM TEMP : KEYBOARD KEYS
@@ -460,6 +556,24 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 
 	switch(cmd)
 	{
+		// KDM : Left trigger changes squad icon.
+		case class'UIUtilities_Input'.const.FXS_BUTTON_LTRIGGER:
+		case class'UIUtilities_Input'.const.FXS_KEY_Z:
+			EditSquadIcon();
+			break;
+
+		// KDM : Right stick click edit the biography.
+		case class'UIUtilities_Input'.const.FXS_BUTTON_RSTICK:
+		case class'UIUtilities_Input'.const.FXS_KEY_Y:
+			EditSquadBiography();
+			break;
+
+		// KDM : Left stick click renames the squad.
+		case class'UIUtilities_Input'.const.FXS_BUTTON_LSTICK:
+		case class'UIUtilities_Input'.const.FXS_KEY_X:
+			RenameSquad();
+			break;
+
 		// KDM : Y button creates a squad.
 		case class'UIUtilities_Input'.const.FXS_BUTTON_Y:
 		case class'UIUtilities_Input'.const.FXS_KEY_E:
@@ -472,14 +586,14 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 			DeleteSelectedSquad();
 			break;
 
-		// KDM : Left trigger selects the previous squad.
-		case class'UIUtilities_Input'.const.FXS_BUTTON_LTRIGGER:
+		// KDM : Left bumper selects the previous squad.
+		case class'UIUtilities_Input'.const.FXS_BUTTON_LBUMPER:
 		case class'UIUtilities_Input'.const.FXS_ARROW_LEFT:
 			PrevSquad();
 			break;
 
-		// KDM : Right trigger selects the next squad
-		case class'UIUtilities_Input'.const.FXS_BUTTON_RTRIGGER:
+		// KDM : Right bumper selects the next squad
+		case class'UIUtilities_Input'.const.FXS_BUTTON_RBUMPER:
 		case class'UIUtilities_Input'.const.FXS_ARROW_RIGHT:
 			NextSquad();
 			break;
