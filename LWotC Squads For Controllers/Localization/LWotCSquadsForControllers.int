@@ -2,10 +2,11 @@
 TitleStr="Squad Menu"
 
 [UIPersonnel_SquadBarracks_ForControllers]
-TitleStr="SQUAD : <XGParam:StrValue0>"
-SubtitleStr="[<XGParam:IntValue0>/<XGParam:IntValue1>]"
-NoSquadsStr="NONE AVAILABLE"
-DashesStr = "---------------"
+TitleStr="SQUAD [<XGParam:IntValue0>/<XGParam:IntValue1>] : <XGParam:StrValue0>"
 StatusStr = "SQUAD STATUS : <XGParam:StrValue0>"
 MissionsStr="MISSIONS : <XGParam:IntValue0>"
+BiographyStr="Squad Biography : <XGParam:StrValue0>"
+
+NoSquadsStr="NONE AVAILABLE"
+DashesStr = "---------------"
 

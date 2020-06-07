@@ -3,21 +3,25 @@
 
 class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel;
 
-var localized string TitleStr, SubtitleStr, NoSquadsStr, DashesStr, StatusStr, MissionsStr;
+// KDM TO DO : IF NO SQUAD'S EXIST
+
+var localized string TitleStr, NoSquadsStr, DashesStr, StatusStr, MissionsStr, BiographyStr;
 
 var int CurrentSquadIndex;
 
 var bool bSelectSquad;
 var int PanelW, PanelH;
 
-var int BorderPadding, FontSize, SquadIconSize;
+var int BorderPadding, FontSize; 
+var int SquadIconBorderSize, SquadIconSize;
 
 var UIPanel MainPanel;
 var UIBGBox SquadBG;
 var UIX2PanelHeader SquadHeader;
 var UIPanel DividerLine;
+var UIPanel SquadIconBG1, SquadIconBG2;
 var UIImage CurrentSquadIcon;
-var UIScrollingText CurrentSquadStatus;
+var UIScrollingText CurrentSquadStatus, CurrentSquadMissions;
 var UITextContainer CurrentSquadBio;
 var UIList SoldierIconList;
 var UIButton SquadSoldiersTab, AvailableSoldiersTab;
@@ -32,7 +36,6 @@ simulated function OnInit()
 
 simulated function InitScreen(XComPlayerController InitController, UIMovie InitMovie, optional name InitName)
 {
-	// TopBG_H was 300
 	local int AvailableW, XLoc, YLoc, HeightVal, WidthVal;
 
 	super(UIScreen).InitScreen(InitController, InitMovie, InitName);
@@ -70,20 +73,55 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	DividerLine.SetWidth(WidthVal);
 	DividerLine.SetAlpha(30);
 	
-	// KDM : Current squad's icon.
+	// KDM : Current squad icon's background 1; this is located behind background 2.
 	XLoc = BorderPadding;
 	YLoc = DividerLine.Y + 10;
+	WidthVal = SquadIconBorderSize + SquadIconSize + SquadIconBorderSize;
+	HeightVal = SquadIconBorderSize + SquadIconSize + SquadIconBorderSize;
+	SquadIconBG1 = Spawn(class'UIPanel', MainPanel);
+	SquadIconBG1.bIsNavigable = false;
+	SquadIconBG1.LibID = class'UIUtilities_Controls'.const.MC_GenericPixel;
+	SquadIconBG1.InitPanel();
+	SquadIconBG1.SetPosition(XLoc, YLoc);
+	SquadIconBG1.SetSize(WidthVal, HeightVal);
+	SquadIconBG1.SetColor("0x333333");
+	SquadIconBG1.SetAlpha(80);
+
+	// KDM : Current squad icon's background 2.
+	XLoc = SquadIconBG1.X + SquadIconBorderSize;
+	YLoc = SquadIconBG1.Y + SquadIconBorderSize;
+	WidthVal = SquadIconSize;
+	HeightVal = SquadIconSize;
+	SquadIconBG2 = Spawn(class'UIPanel', MainPanel);
+	SquadIconBG2.bIsNavigable = false;
+	SquadIconBG2.LibID = class'UIUtilities_Controls'.const.MC_GenericPixel;
+	SquadIconBG2.InitPanel();
+	SquadIconBG2.SetPosition(XLoc, YLoc);
+	SquadIconBG2.SetSize(WidthVal, HeightVal);
+	SquadIconBG2.SetColor("0x000000");
+	SquadIconBG2.SetAlpha(100);
+
+	// KDM : Current squad's icon.
+	XLoc = SquadIconBG2.X;
+	YLoc = SquadIconBG2.Y;
 	CurrentSquadIcon = Spawn(class'UIImage', MainPanel);
 	CurrentSquadIcon.InitImage();
 	CurrentSquadIcon.SetPosition(XLoc, YLoc);
 	CurrentSquadIcon.SetSize(SquadIconSize, SquadIconSize);
 	
 	// KDM : Current squad's status.
-	XLoc = CurrentSquadIcon.X + CurrentSquadIcon.Width + BorderPadding;
-	YLoc = DividerLine.Y + 30;
+	XLoc = SquadIconBG1.X + SquadIconBG1.Width + BorderPadding;
+	YLoc = DividerLine.Y + 10;
 	WidthVal = PanelW - SquadIconSize - (BorderPadding * 3);
 	CurrentSquadStatus = Spawn(class'UIScrollingText', MainPanel);
 	CurrentSquadStatus.InitScrollingText(, "Current Squad Status", WidthVal, XLoc, YLoc);
+
+	// KDM : Current squad's mission count.
+	XLoc = CurrentSquadStatus.X;
+	YLoc = CurrentSquadStatus.Y;
+	WidthVal = CurrentSquadStatus.Width;
+	CurrentSquadMissions = Spawn(class'UIScrollingText', MainPanel);
+	CurrentSquadMissions.InitScrollingText(, "Current Squad Missions", WidthVal, XLoc, YLoc);
 
 	// KDM : List of icons representing soldiers in the squad.
 	XLoc = CurrentSquadStatus.X;
@@ -106,7 +144,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 
 	// KDM : Squad soldiers tab.
 	XLoc = BorderPadding;
-	YLoc = CurrentSquadIcon.Y + CurrentSquadIcon.Height + BorderPadding;
+	YLoc = SquadIconBG1.Y + SquadIconBG1.Height + BorderPadding;
 	WidthVal = int(float(AvailableW) * 0.5);
 	SquadSoldiersTab = Spawn(class'UIButton', MainPanel);
 	SquadSoldiersTab.ResizeToText = false;
@@ -116,7 +154,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	
 	// KDM : Available soldiers tab.
 	XLoc = SquadSoldiersTab.X + SquadSoldiersTab.Width + BorderPadding;
-	YLoc = CurrentSquadIcon.Y + CurrentSquadIcon.Height + BorderPadding;
+	YLoc = SquadSoldiersTab.Y;
 	WidthVal = int(float(AvailableW) * 0.5);
 	AvailableSoldiersTab = Spawn(class'UIButton', MainPanel);
 	AvailableSoldiersTab.ResizeToText = false;
@@ -126,7 +164,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	
 	// KDM : If at least 1 squad exists, select the 1st one by setting CurrentSquadIndex to 0.
 	// If no squads exist, signify this by setting CurrentSquadIndex to -1.
-	CurrentSquadIndex = (GetTotalSquads() == 0) ? -1 : 0;
+	CurrentSquadIndex = (NoSquadsExist()) ? -1 : 0;
 
 	UpdateSquadUI();
 	
@@ -136,54 +174,61 @@ simulated function UpdateSquadUI()
 {
 	local bool NoSquads;
 	local int TextState;
-	local string SquadTitle, SquadSubtitle, SquadStatus, SquadBio;
+	local string SquadTitle, SquadStatus, SquadMissions, SquadBio;
 	local XComGameState_LWPersistentSquad CurrentSquadState;
 	local XGParamTag ParamTag;
 	
-	NoSquads = (GetTotalSquads() == 0) ? true : false;
+	NoSquads = NoSquadsExist();
 	CurrentSquadState = GetCurrentSquad();
 
-	// KDM : If squads exist, but no squad is selected, just exit. This should not happen !
-	if ((CurrentSquadState == none) && (!NoSquads))
+	// KDM : If no squads exist set up the UI a little differently, then exit.
+	if (NoSquads)
 	{
 		return;
 	}
 
-	// KDM : Set the squad title which is of the form 'SQUAD : NAME_OF_SQUAD'.
+	// KDM : Somehow squads exist, yet no squad is selected; this shouldn't happen, so just exit.
+	if (CurrentSquadState == none) return;
+
+	// KDM : Set the squad title, which is of the form 'SQUAD [1/4] : NAME_OF_SQUAD'.
 	ParamTag = XGParamTag(`XEXPANDCONTEXT.FindTag("XGParam"));
-	ParamTag.StrValue0 = (NoSquads) ? NoSquadsStr : CAPS(CurrentSquadState.sSquadName);
+	ParamTag.IntValue0 = CurrentSquadIndex + 1;
+	ParamTag.IntValue1 = GetTotalSquads();
+	ParamTag.StrValue0 = CAPS(CurrentSquadState.sSquadName);
 	SquadTitle = `XEXPAND.ExpandString(TitleStr);
+	
+	SquadHeader.SetText(SquadTitle);
+	// KDM : There is flash bug in UIX2PanelHeader such that the text is only updated after realize() is called.
+	// Unfortunately, SetText() doesn't call realize(), so we have to do it ourself.
+	SquadHeader.MC.FunctionVoid("realize");
 
-	// KDM : Set the squad subtitle which is of the form '[1/4]'.
-	ParamTag = XGParamTag(`XEXPANDCONTEXT.FindTag("XGParam"));
-	ParamTag.IntValue0 = (NoSquads) ? 0 : (CurrentSquadIndex + 1);
-	ParamTag.IntValue1 = (NoSquads) ? 0 : GetTotalSquads();
-	SquadSubtitle = `XEXPAND.ExpandString(SubtitleStr);
-
-	SquadHeader.SetText(SquadTitle, SquadSubtitle);
-
-	// KDM : Set the squad icon; nothing will show if no squads exist.
-	if (CurrentSquadState != none)
-	{
-		CurrentSquadIcon.LoadImage(CurrentSquadState.GetSquadImagePath());
-	}
+	// KDM : Set the squad icon.
+	CurrentSquadIcon.LoadImage(CurrentSquadState.GetSquadImagePath());
 	
 	// KDM : Set the squad status; it will be wither 'ON MISSION' or 'AVAILABLE'.
 	SquadStatus = (CurrentSquadState.IsDeployedOnMission()) ? class'UISquadListItem'.default.sSquadOnMission : class'UISquadListItem'.default.sSquadAvailable;
 	TextState = (CurrentSquadState.IsDeployedOnMission()) ? eUIState_Warning : eUIState_Good;
-	SquadStatus = class'UIUtilities_Text'.static.GetColoredText(SquadStatus, TextState); 
+	SquadStatus = class'UIUtilities_Text'.static.GetColoredText(SquadStatus, TextState, 24); 
 	ParamTag = XGParamTag(`XEXPANDCONTEXT.FindTag("XGParam"));
-	ParamTag.StrValue0 = (NoSquads) ? DashesStr : SquadStatus;
+	ParamTag.StrValue0 = SquadStatus;
 	SquadStatus = `XEXPAND.ExpandString(StatusStr);
-
+	CurrentSquadStatus.SetHTMLText(SquadStatus);
+	
+	// KDM : Set the squad's mission count; it will be of the form 'Missions : 1'.
+	ParamTag = XGParamTag(`XEXPANDCONTEXT.FindTag("XGParam"));
+	ParamTag.IntValue0 = CurrentSquadState.iNumMissions;
+	SquadMissions = `XEXPAND.ExpandString(MissionsStr);
+	SquadMissions = class'UIUtilities_Text'.static.GetColoredText(SquadMissions, eUIState_Normal, 24, "RIGHT"); 
+	//SquadMissions = class'UIUtilities_Text'.static.AlignRight(SquadMissions);
+	CurrentSquadMissions.SetHTMLText(SquadMissions);
+	
 	// KDM : Update the soldier icon list.
 	UpdateSoldierClassIcons(CurrentSquadState);
 
 	// KDM : Set the squad biography; this includes the number of missions on the 1st line.
 	ParamTag = XGParamTag(`XEXPANDCONTEXT.FindTag("XGParam"));
-	ParamTag.IntValue0 = CurrentSquadState.iNumMissions;
-	SquadBio = `XEXPAND.ExpandString(MissionsStr);
-	SquadBio $= "\n" $ CurrentSquadState.sSquadBiography;
+	ParamTag.StrValue0 = CurrentSquadState.sSquadBiography;
+	SquadBio = `XEXPAND.ExpandString(BiographyStr);
 	CurrentSquadBio.SetText(SquadBio);
 }
 
@@ -297,9 +342,26 @@ simulated function XComGameState_LWPersistentSquad GetCurrentSquad()
 	return XComGameState_LWPersistentSquad(`XCOMHISTORY.GetGameStateForObjectID(CurrentSquadRef.ObjectID));
 }
 
+simulated function bool NoSquadsExist()
+{
+	return (GetTotalSquads() == 0) ? true : false;
+}
+
 simulated function int GetTotalSquads()
 {
 	return `LWSQUADMGR.Squads.Length;
+}
+
+simulated function NextSquad()
+{
+	CurrentSquadIndex = ((CurrentSquadIndex + 1) >=  GetTotalSquads()) ? 0 : CurrentSquadIndex + 1;
+	UpdateSquadUI();
+}
+
+simulated function PrevSquad()
+{
+	CurrentSquadIndex = ((CurrentSquadIndex - 1) < 0) ? (GetTotalSquads() - 1) : CurrentSquadIndex - 1;
+	UpdateSquadUI();
 }
 
 
@@ -321,6 +383,18 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 
 	switch(cmd)
 	{
+		// KDM : Left trigger selects the previous squad.
+		case class'UIUtilities_Input'.const.FXS_BUTTON_LTRIGGER:
+		case class'UIUtilities_Input'.const.FXS_ARROW_LEFT:
+			PrevSquad();
+			break;
+
+		// KDM : Right trigger selects the next squad
+		case class'UIUtilities_Input'.const.FXS_BUTTON_RTRIGGER:
+		case class'UIUtilities_Input'.const.FXS_ARROW_RIGHT:
+			NextSquad();
+			break;
+
 		case class'UIUtilities_Input'.const.FXS_BUTTON_B:
 		case class'UIUtilities_Input'.const.FXS_KEY_ESCAPE:
 		case class'UIUtilities_Input'.const.FXS_R_MOUSE_DOWN:
@@ -336,108 +410,6 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 }
 
 
-/* LW2 VERSION
-simulated function InitScreen(XComPlayerController InitController, UIMovie InitMovie, optional name InitName)
-{
-	// Init UI
-	super(UIScreen).InitScreen(InitController, InitMovie, InitName);
-
-	//shift the whole screen over to make room for the squad list
-	SetPosition(340, 0);
-
-	SquadListBG = Spawn(class'UIBGBox', self);
-	SquadListBG.LibID = class'UIUtilities_Controls'.const.MC_X2Background;
-	SquadListBG.InitBG('ListBG', -241, 123, 702, 863);
-
-	m_kSquadList = Spawn(class'UIList', self);
-	m_kSquadList.bIsNavigable = false;
-	m_kSquadList.ItemPadding = 3;
-	m_kSquadList.InitList(, SquadListBG.X + 11, SquadListBG.Y + 11, SquadListBG.width-47, SquadListBG.height-22, false ); //, true , class'UIUtilities_Controls'.const.MC_X2Background);
-	m_kSquadList.bStickyHighlight = false;
-	m_kSquadList.SetSelectedIndex(0);
-	m_kSquadList.OnItemClicked = SquadListButtonCallback;
-
-    // Redirect all mouse events for the background to the list. Ensures all mouse
-    // wheel events get processed by the list instead of consumed by the background
-    // when the cursor falls "between" list items.
-    SquadListBG.ProcessMouseEvents(m_kSquadList.OnChildMouseEvent);
-
-	DeleteSquadBtn = Spawn(class'UIButton', self);
-	DeleteSquadBtn.SetResizeToText(false);
-	DeleteSquadBtn.InitButton(, strDeleteSquad, OnDeleteClicked).SetPosition(SquadListBG.X+5, SquadListBG.Y - 28).SetWidth(190);
-
-	CreateSquadBtn = Spawn(class'UIButton', self);
-	CreateSquadBtn.SetResizeToText(false);
-	CreateSquadBtn.InitButton(, strAddSquad, OnCreateSquadClicked).SetPosition(SquadListBG.X + SquadListBG.Width - 194, SquadListBG.Y - 28).SetWidth(190);
-
-	m_kList = Spawn(class'UIList', self);
-	m_kList.bIsNavigable = true;
-	m_kList.InitList('listAnchor', 487, 316, m_iMaskWidth, m_iMaskHeight);
-	m_kList.bStickyHighlight = false;
-
-	UpperContainer = Spawn(class'UIPanel', self).InitPanel().SetPosition(492, 145).SetSize(994, 132);
-
-	SquadImage = UIImage(Spawn(class'UIImage', UpperContainer).InitImage().SetSize(100, 100).SetPosition(8, 2));
-	SquadImage.bProcessesMouseEvents = true;
-	SquadImage.MC.FunctionVoid("processMouseEvents");
-	SquadImage.OnClickedDelegate = OnSquadIconClicked;
-
-	SquadImageSelectLeftButton = Spawn(class'UIButton', UpperContainer);
-	SquadImageSelectLeftButton.LibID = 'X2DrawerButton';
-	SquadImageSelectLeftButton.bAnimateOnInit = false;
-	SquadImageSelectLeftButton.InitButton(,,OnImageScrollButtonClicked); 
-
-	SquadImageSelectRightButton = Spawn(class'UIButton', UpperContainer);
-	SquadImageSelectRightButton.LibID = 'X2DrawerButton';
-	SquadImageSelectRightButton.bAnimateOnInit = false;
-	SquadImageSelectRightButton.InitButton(,,OnImageScrollButtonClicked); 
-	UpdateLeftRightButtonPositions();
-
-	SquadMissionsText = Spawn(class'UIScrollingText', UpperContainer).InitScrollingText(, "Squad Name", 600,,,true);
-	SquadMissionsText.SetPosition(11, 97);
-
-	SquadBiography = Spawn(class'UITextContainer', UpperContainer);	
-	SquadBiography.InitTextContainer( , "", 131, 5, 430, 121);
-	SquadBiography.SetHTMLText(class'UIUtilities_Text'.static.GetColoredText("Bravely bold Sir Robin rode forth from Camelot\nHe was not afraid to die, O brave Sir Robin\nHe was not at all afraid to be killed in nasty ways\nBrave, brave, brave, brave Sir Robin\nHe was not in the least bit scared to be mashed into a pulp\nOr to have his eyes gouged out and his elbows broken\nTo have his kneecaps split and his body burned away\nAnd his limbs all hacked and mangled, brave Sir Robin", eUIState_Normal));
-	//SquadBiography.SetHeight(121);
-
-	SelectOrViewBtn = Spawn(class'UILargeButton', UpperContainer);
-	if(bSelectSquad)
-		SelectOrViewBtn.InitLargeButton(, strSelect, strSquad, OnEditOrSelectClicked).SetPosition(566, 14);
-	else
-		SelectOrViewBtn.InitLargeButton(, strEdit, strSquad, OnEditOrSelectClicked).SetPosition(566, 14);
-
-	RenameSquadBtn = Spawn(class'UIButton', UpperContainer);
-	RenameSquadBtn.SetResizeToText(false);
-	RenameSquadBtn.InitButton(, strRenameSquad, OnRenameClicked).SetPosition(772, 14).SetWidth(190);
-
-	EditBiographyButton = Spawn(class'UIButton', UpperContainer);
-	EditBiographyButton.SetResizeToText(false);
-	EditBiographyButton.InitButton(, strEditBiography, OnEditBiographyClicked).SetPosition(772, 54).SetWidth(190);
-
-	ViewUnassignedBtn = Spawn(class'UIButton', UpperContainer);
-	ViewUnassignedBtn.SetResizeToText(false);
-	ViewUnassignedBtn.InitButton(, strViewUnassigned, OnViewUnassignedClicked).SetPosition(772, 94).SetWidth(190);
-
-	m_arrNeededTabs.AddItem(m_eListType);
-	m_arrTabButtons[eUIPersonnel_Soldiers] = CreateTabButton('SoldierTab', m_strSoldierTab, SoldiersTab);
-	m_arrTabButtons[eUIPersonnel_Soldiers].bIsNavigable = false;
-
-	if(ExternalSelectedSquadRef.ObjectID < 0)
-		CurrentSquadSelection = -1;
-	else
-		CurrentSquadSelection = SelectInitialSquad(ExternalSelectedSquadRef);
-
-	CreateSortHeaders();
-	
-	RefreshAllData();
-
-	EnableNavigation();
-	Navigator.LoopSelection = true;
-	Navigator.SelectedIndex = 0;
-	Navigator.OnSelectedIndexChanged = SelectedHeaderChanged;
-}
-*/
 
 defaultproperties
 {
@@ -446,7 +418,9 @@ defaultproperties
 
 	BorderPadding = 10;
 	FontSize = 24;
-	SquadIconSize = 150;
+
+	SquadIconSize = 144;
+	SquadIconBorderSize = 3;
 
 	m_eListType = eUIPersonnel_Soldiers;
 	
