@@ -3,7 +3,7 @@
 
 class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel;
 
-var localized string TitleStr, SubtitleStr, NoSquadsStr;
+var localized string TitleStr, SubtitleStr, NoSquadsStr, DashesStr, StatusStr, MissionsStr;
 
 var int CurrentSquadIndex;
 
@@ -134,32 +134,156 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 
 simulated function UpdateSquadUI()
 {
-	local bool NoSquads, NoSquadSelected;
-	local string SquadTitle, SquadSubtitle;
+	local bool NoSquads;
+	local int TextState;
+	local string SquadTitle, SquadSubtitle, SquadStatus, SquadBio;
 	local XComGameState_LWPersistentSquad CurrentSquadState;
 	local XGParamTag ParamTag;
 	
 	NoSquads = (GetTotalSquads() == 0) ? true : false;
-	
-	// KDM : Set the squad title and subtitle; title is of the form 'SQUAD : NAME_OF_SQUAD' while subtitle is of the form '[1/4]'.
+	CurrentSquadState = GetCurrentSquad();
+
+	// KDM : If squads exist, but no squad is selected, just exit. This should not happen !
+	if ((CurrentSquadState == none) && (!NoSquads))
+	{
+		return;
+	}
+
+	// KDM : Set the squad title which is of the form 'SQUAD : NAME_OF_SQUAD'.
 	ParamTag = XGParamTag(`XEXPANDCONTEXT.FindTag("XGParam"));
-	ParamTag.StrValue0 = (NoSquads) ? NoSquadsStr : CAPS(SquadState.sSquadName);
+	ParamTag.StrValue0 = (NoSquads) ? NoSquadsStr : CAPS(CurrentSquadState.sSquadName);
 	SquadTitle = `XEXPAND.ExpandString(TitleStr);
 
-	if (GetTotalSquads() == 0)
-	{
-		
-		
-		ParamTag = XGParamTag(`XEXPANDCONTEXT.FindTag("XGParam"));
-		ParamTag.IntValue0 = 0;
-		ParamTag.IntValue1 = 0;
-		Subtitle = `XEXPAND.ExpandString(SubtitleStr);
+	// KDM : Set the squad subtitle which is of the form '[1/4]'.
+	ParamTag = XGParamTag(`XEXPANDCONTEXT.FindTag("XGParam"));
+	ParamTag.IntValue0 = (NoSquads) ? 0 : (CurrentSquadIndex + 1);
+	ParamTag.IntValue1 = (NoSquads) ? 0 : GetTotalSquads();
+	SquadSubtitle = `XEXPAND.ExpandString(SubtitleStr);
 
-		SquadHeader.SetText(Title, Subtitle);
+	SquadHeader.SetText(SquadTitle, SquadSubtitle);
+
+	// KDM : Set the squad icon; nothing will show if no squads exist.
+	if (CurrentSquadState != none)
+	{
+		CurrentSquadIcon.LoadImage(CurrentSquadState.GetSquadImagePath());
 	}
-	//var localized string TitleStr, SubtitleStr, NoSquadsStr;
+	
+	// KDM : Set the squad status; it will be wither 'ON MISSION' or 'AVAILABLE'.
+	SquadStatus = (CurrentSquadState.IsDeployedOnMission()) ? class'UISquadListItem'.default.sSquadOnMission : class'UISquadListItem'.default.sSquadAvailable;
+	TextState = (CurrentSquadState.IsDeployedOnMission()) ? eUIState_Warning : eUIState_Good;
+	SquadStatus = class'UIUtilities_Text'.static.GetColoredText(SquadStatus, TextState); 
+	ParamTag = XGParamTag(`XEXPANDCONTEXT.FindTag("XGParam"));
+	ParamTag.StrValue0 = (NoSquads) ? DashesStr : SquadStatus;
+	SquadStatus = `XEXPAND.ExpandString(StatusStr);
+
+	// KDM : Update the soldier icon list.
+	UpdateSoldierClassIcons(CurrentSquadState);
+
+	// KDM : Set the squad biography; this includes the number of missions on the 1st line.
+	ParamTag = XGParamTag(`XEXPANDCONTEXT.FindTag("XGParam"));
+	ParamTag.IntValue0 = CurrentSquadState.iNumMissions;
+	SquadBio = `XEXPAND.ExpandString(MissionsStr);
+	SquadBio $= "\n" $ CurrentSquadState.sSquadBiography;
+	CurrentSquadBio.SetText(SquadBio);
 }
 
+// KDM : LW2 function.
+simulated function int GetClassIconAlphaStatus(XComGameState_Unit SoldierState, XComGameState_LWPersistentSquad CurrentSquadState)
+{
+	local bool IsSquadDeployedOnMission, IsSoldierOnMission;
+	
+	IsSquadDeployedOnMission = CurrentSquadState.IsDeployedOnMission();
+	IsSoldierOnMission = CurrentSquadState.IsSoldierOnMission(SoldierState.GetReference());
+
+	// LW2 : If the squad is on a mission, but this squad's soldier isn't, dim the icon regardless of their actual status.
+	if (IsSquadDeployedOnMission && (!IsSoldierOnMission)) return 30;
+	
+	switch (SoldierState.GetStatus())
+	{
+		case eStatus_Active:
+			if (CurrentSquadState.bOnMission && CurrentSquadState.IsSoldierTemporary(SoldierState.GetReference())) return 50;
+			else return 100;
+
+		case eStatus_OnMission:
+			return (`LWOUTPOSTMGR.IsUnitAHavenLiaison(SoldierState.GetReference())) ? 50 : 100;
+		
+		case eStatus_PsiTraining:
+		case eStatus_PsiTesting:
+		case eStatus_Training:
+		case eStatus_Healing:
+		case eStatus_Dead:
+		default:
+			return 50;
+	}
+}
+
+// KDM : LW2 function.
+simulated function UpdateSoldierClassIcons(XComGameState_LWPersistentSquad CurrentSquadState)
+{
+	local int i, StartIndex;
+	local array<XComGameState_Unit> SoldierStates;
+	local UISquadClassItem SoldierClassIcon;
+	local XComGameState_Unit SoldierState;
+	
+	SoldierStates = CurrentSquadState.GetSoldiers();
+	
+	// LWS : Add permanent soldiers icons
+	for (i = 0; i < SoldierStates.Length; i++)
+	{
+		SoldierState = SoldierStates[i];
+		SoldierClassIcon = UISquadClassItem(SoldierIconList.GetItem(i));
+		
+		if (SoldierClassIcon == none)
+		{
+			SoldierClassIcon = UISquadClassItem(SoldierIconList.CreateItem(class'UISquadClassItem'));
+			// KDM : The size is automatically set to 38 x 38.
+			SoldierClassIcon.InitSquadClassItem();
+		}
+
+		SoldierClassIcon.LoadClassImage(SoldierState.GetSoldierClassTemplate().IconImage);
+		// LWS : Dim unavailable soldiers.
+		SoldierClassIcon.SetAlpha(GetClassIconAlphaStatus(SoldierState, CurrentSquadState));
+		SoldierClassIcon.ShowTempIcon(false);
+		SoldierClassIcon.Show();
+	}
+	
+	StartIndex = i;
+	SoldierStates = CurrentSquadState.GetTempSoldiers();
+	
+	// LWS : Add temporary soldiers icons
+	for (i = StartIndex; i < StartIndex + SoldierStates.Length; i++)
+	{
+		SoldierState = SoldierStates[i - StartIndex];
+		SoldierClassIcon = UISquadClassItem(SoldierIconList.GetItem(i));
+		
+		if (SoldierClassIcon == none)
+		{
+			SoldierClassIcon = UISquadClassItem(SoldierIconList.CreateItem(class'UISquadClassItem'));
+			// KDM : The size is automatically set to 38 x 38.
+			SoldierClassIcon.InitSquadClassItem();
+		}
+
+		SoldierClassIcon.LoadClassImage(SoldierState.GetSoldierClassTemplate().IconImage);
+		// LWS : Dim unavailable soldiers
+		SoldierClassIcon.SetAlpha(GetClassIconAlphaStatus(SoldierState, CurrentSquadState));
+		SoldierClassIcon.ShowTempIcon(true);
+		SoldierClassIcon.Show();
+	}
+
+	StartIndex = i;
+
+	// LWS : Hide additional icons
+	if (SoldierIconList.GetItemCount() > StartIndex)								
+	{
+		for (i = StartIndex; i < SoldierIconList.GetItemCount(); i++)
+		{
+			SoldierClassIcon = UISquadClassItem(SoldierIconList.GetItem(i));
+			SoldierClassIcon.Hide();
+		}
+	}
+}
+
+// KDM : LW2 function modified.
 simulated function XComGameState_LWPersistentSquad GetCurrentSquad()
 {
 	local StateObjectReference CurrentSquadRef;
