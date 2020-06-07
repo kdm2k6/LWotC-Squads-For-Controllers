@@ -1,10 +1,12 @@
 // MC.ChildFunctionVoid("personnelSort", "MoveToHighestDepth");
 // Default flash background is - X/Y/WIDTH/HEIGHT : 480.0000 90.0000 1000.0000 895.9500
 
-class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel;
+class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadSettings);
 
 // KDM TO DO : IF NO SQUAD'S EXIST
-// Probably make a function like : IsCurrentSquadValid() - returns false if no squads or selected index is -1
+
+// KDM : This is needed for the squad icon selector.
+var config array<string> SquadImagePaths;
 
 var localized string TitleStr, NoSquadsStr, DashesStr, StatusStr, MissionsStr, BiographyStr;
 
@@ -138,9 +140,9 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	WidthVal = PanelW - SquadIconSize - (BorderPadding * 3);
 	HeightVal = 100;
 	CurrentSquadBio = Spawn(class'UITextContainer', MainPanel);
-	CurrentSquadBio.InitTextContainer(, , XLoc, YLoc, WidthVal, HeightVal, false, , true);
+	CurrentSquadBio.InitTextContainer(, "", XLoc, YLoc, WidthVal, HeightVal, false, , true);
 	CurrentSquadBio.SetText("Current Squad Bio");
-
+	
 	AvailableW = PanelW - (BorderPadding * 3);
 
 	// KDM : Squad soldiers tab.
@@ -510,31 +512,20 @@ function OnEditBiographyInputBoxClosed(string NewSquadBio)
 // LWOTC: Integrated from robojumper's Better Squad Icon Selector mod
 function EditSquadIcon()
 {
-	local UISquadIconSelectionScreen IconSelectionScreen;
+	local UISquadIconSelectionScreen_ForControllers IconSelectionScreen;
 	local XComPresentationLayerBase HQPres;
 	
 	if (CurrentSquadIcon == none) return;
 
 	HQPres = `HQPRES;
 
-	if (HQPres != none && HQPres.ScreenStack.IsNotInStack(class'UISquadIconSelectionScreen'))
+	if (HQPres != none && HQPres.ScreenStack.IsNotInStack(class'UISquadIconSelectionScreen_ForControllers'))
 	{
-		IconSelectionScreen = HQPres.Spawn(class'UISquadIconSelectionScreen', HQPres);
-		IconSelectionScreen.BelowScreen = UIPersonnel_SquadBarracks(CurrentSquadIcon.ParentPanel.Screen);
+		IconSelectionScreen = HQPres.Spawn(class'UISquadIconSelectionScreen_ForControllers', HQPres);
+		IconSelectionScreen.BelowScreen = self;
 		IconSelectionScreen.BelowScreen.bHideOnLoseFocus = false;
 		HQPres.ScreenStack.Push(IconSelectionScreen, HQPres.Get2DMovie());
 	}
-}
-
-// KDM : Called by UISquadIconSelectionScreen at the end of SetSquadImage(); just map it to my own function.
-simulated function UpdateSquadHeader()
-{
-	UpdateSquadUI();
-}
-
-// KDM : Called by UISquadIconSelectionScreen at the end of SetSquadImage(); just map it to my own function.
-simulated function UpdateSquadList()
-{
 }
 
 simulated function bool OnUnrealCommand(int cmd, int arg)
@@ -563,13 +554,13 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 			break;
 
 		// KDM : Right stick click edit the biography.
-		case class'UIUtilities_Input'.const.FXS_BUTTON_RSTICK:
+		case class'UIUtilities_Input'.const.FXS_BUTTON_R3:
 		case class'UIUtilities_Input'.const.FXS_KEY_Y:
 			EditSquadBiography();
 			break;
 
 		// KDM : Left stick click renames the squad.
-		case class'UIUtilities_Input'.const.FXS_BUTTON_LSTICK:
+		case class'UIUtilities_Input'.const.FXS_BUTTON_L3:
 		case class'UIUtilities_Input'.const.FXS_KEY_X:
 			RenameSquad();
 			break;
