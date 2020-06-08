@@ -5,6 +5,7 @@ class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadS
 // KDM TO DO : IF NO SQUAD'S EXIST
 // NAVIGATION
 // FLIP SORT BUTTON WHEN CLICKED CALLS - RefreshData - might need to deal with that - actually probably just mouse stuff - controller dealt with in OnUnrealCommand
+// WILL LIKELY NEED TO RESET SORTING COLUMN AND FLIP DURING MOST CIRCUMSTANCES
 
 // KDM : This is needed for the squad icon selector.
 var config array<string> SquadImagePaths;
@@ -310,8 +311,6 @@ simulated function UpdateListSelection()
 		m_kList.ClearSelection();
 	}
 }
-
-
 
 simulated function UpdateListData()
 {
@@ -824,13 +823,103 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 			ToggleTabFocus();
 			UpdateListUI(false);
 		}
+		// KDM : DPad left changes list column selection; this is UIPersonnel code.
+		else if (cmd == class'UIUtilities_Input'.const.FXS_DPAD_LEFT)
+		{
+			m_bFlipSort = false;
+			m_iSortTypeOrderIndex--;
+			if (m_iSortTypeOrderIndex < 0)
+			{
+				m_iSortTypeOrderIndex = m_aSortTypeOrder.Length - 1;
+			}
+			SetSortType(m_aSortTypeOrder[m_iSortTypeOrderIndex]);
+			UpdateSortHeaders();
+			PlaySound(SoundCue'SoundUI.MenuScrollCue', true);
+		}
+		// KDM : DPad right changes list column selection; this is UIPersonnel code.
+		else if (cmd == class'UIUtilities_Input'.const.FXS_DPAD_RIGHT)
+		{
+			m_bFlipSort = false;
+			m_iSortTypeOrderIndex++;
+			if (m_iSortTypeOrderIndex >= m_aSortTypeOrder.Length)
+			{
+				m_iSortTypeOrderIndex = 0;
+			}
+			SetSortType(m_aSortTypeOrder[m_iSortTypeOrderIndex]);
+			UpdateSortHeaders();
+			PlaySound(SoundCue'SoundUI.MenuScrollCue', true);
+		}
+		// KDM : X button changes list sorting.
+		else if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_X)
+		{
+			m_bFlipSort = !m_bFlipSort;
+			UpdateListUI(false);
+		}
+		// KDM : A button transfers a soldier to/from a squad, if possible.
+		else if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_A)
+		{
+			OnSoldierSelected(m_kList, m_kList.selectedIndex);
+		}
 		else
 		{
 			bHandled = false;
 		}
 	}
 
-	return bHandled || super(UIScreen).OnUnrealCommand(cmd, arg);
+	return bHandled; // KDM : I don't think I want UIScreen allowing things like jumping to the Geoscape || super(UIScreen).OnUnrealCommand(cmd, arg);
+}
+
+simulated function OnSoldierSelected(UIList SquadList, int SelectedIndex)
+{
+	local int SquadListSize;
+	local UIPersonnel_ListItem SoldierListItem;
+	local XComGameState NewGameState;
+	local XComGameState_LWPersistentSquad CurrentSquadState;
+	local XComGameState_Unit CurrentSoldierState;
+
+	if (!CurrentSquadIsValid()) return;
+	if ((SelectedIndex < 0) || (SelectedIndex >= SquadList.ItemCount)) return;
+	if (UIPersonnel_ListItem(SquadList.GetItem(SelectedIndex)).IsDisabled) return;
+
+	CurrentSquadState = GetCurrentSquad();
+	SoldierListItem = UIPersonnel_ListItem(SquadList.GetItem(SelectedIndex));
+	CurrentSoldierState = XComGameState_Unit(`XCOMHISTORY.GetGameStateForObjectID(SoldierListItem.UnitRef.ObjectID));
+	
+	if (!CanTransferSoldier(CurrentSoldierState.GetReference(), CurrentSquadState)) return;
+
+	NewGameState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Transferring Soldier");
+	CurrentSquadState = XComGameState_LWPersistentSquad(NewGameState.CreateStateObject(class'XComGameState_LWPersistentSquad', CurrentSquadState.ObjectID));
+	NewGameState.AddStateObject(CurrentSquadState);
+
+	if(DisplayingAvailableSoldiers)
+	{
+		CurrentSquadState.AddSoldier(CurrentSoldierState.GetReference());
+	}
+	else
+	{
+		CurrentSquadState.RemoveSoldier(CurrentSoldierState.GetReference());
+	}
+
+	`XCOMGAME.GameRuleset.SubmitGameState(NewGameState);
+
+	// KDM : Normally I would just update the list UI; howver, the squad's soldier icon list also needs to be updated.
+	UpdateAll(false);
+	
+	// KDM : Attempt to keep the same item index selected for continuity.
+	SquadListSize = SquadList.ItemCount;
+	if ((SquadListSize > 0) && (SquadList.SelectedIndex != SelectedIndex))
+	{
+		if (SelectedIndex >= SquadListSize)
+		{
+			SelectedIndex = SquadListSize - 1;
+		}
+		SquadList.SetSelectedIndex(SelectedIndex);
+		/* I DON'T THINK THIS IS NEEDED ANYMORE
+		if (m_kList.Scrollbar != none)
+		{
+			m_kList.Scrollbar.SetThumbAtPercent(float(OrigSelectedIndex) / float(ListSize - 1));
+		}*/
+	}
 }
 
 simulated function bool CanTransferSoldier(StateObjectReference SoldierRef, optional XComGameState_LWPersistentSquad CurrentSquadState)
