@@ -54,6 +54,12 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 
 	super(UIScreen).InitScreen(InitController, InitMovie, InitName);
 
+	// KDM : Fill in the sort type array since its original setup function, UIPersonnel.SwitchTab, is no longer called.
+	m_aSortTypeOrder.AddItem(ePersonnelSoldierSortType_Rank);
+	m_aSortTypeOrder.AddItem(ePersonnelSoldierSortType_Name);
+	m_aSortTypeOrder.AddItem(ePersonnelSoldierSortType_Class);
+	m_aSortTypeOrder.AddItem(ePersonnelSoldierSortType_Status);
+
 	// KDM : Container which will hold our UI components : it's invisible.
 	MainPanel = Spawn(class'UIPanel', self);
 	MainPanel.bIsNavigable = false;
@@ -178,7 +184,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	AvailableSoldiersTab.SetPosition(XLoc, YLoc);
 	AvailableSoldiersTab.SetWidth(WidthVal);
 	
-	CreateListHeader();
+	CreateSortableHeader();
 
 	// KDM : Soldier list.
 	XLoc = MainPanel.X + SquadSoldiersTab.X;
@@ -196,7 +202,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	UpdateAll(true);
 }
 
-simulated function CreateListHeader()
+simulated function CreateSortableHeader()
 {
 	local int XLoc, YLoc;
 
@@ -216,10 +222,10 @@ simulated function CreateListHeader()
 	Spawn(class'UIFlipSortButton', m_kSoldierSortHeader).InitFlipSortButton("statusButton", ePersonnelSoldierSortType_Status, m_strButtonLabels[ePersonnelSoldierSortType_Status], m_strButtonValues[ePersonnelSoldierSortType_Status]);
 }
 
-simulated function UpdateAll(optional bool _ResetTabFocus = false)
+simulated function UpdateAll(optional bool _ResetTabFocus = false, optional bool _ResetSortType = true)
 {
 	UpdateSquadUI();
-	UpdateListUI(_ResetTabFocus);
+	UpdateListUI(_ResetTabFocus, _ResetSortType);
 }
 
 simulated function UpdateSquadUI()
@@ -284,12 +290,10 @@ simulated function UpdateSquadUI()
 	CurrentSquadBio.SetText(SquadBio);
 }
 
-simulated function UpdateListUI(optional bool _ResetTabFocus = false)
+simulated function UpdateListUI(optional bool _ResetTabFocus = false, optional bool _ResetSortType = true)
 {
-	if (_ResetTabFocus) 
-	{
-		ResetTabFocus();
-	}
+	if (_ResetTabFocus) ResetTabFocus();
+	if (_ResetSortType) ResetSortType();
 
 	UpdateListData();
 	SortListData();
@@ -298,18 +302,18 @@ simulated function UpdateListUI(optional bool _ResetTabFocus = false)
 	UpdateListSelection();
 }
 
-
-
-simulated function UpdateListSelection()
+simulated function ResetTabFocus()
 {
-	if (SoldierUIFocused)
-	{
-		if (m_kList.ItemCount > 0) m_kList.SetSelectedIndex(0, true);
-	}
-	else
-	{
-		m_kList.ClearSelection();
-	}
+	// KDM : By default, the squad's soldiers tab has focus.
+	SetTabFocus(false, true);
+}
+
+simulated function ResetSortType()
+{
+	// KDM : By default, sort the list in rank descending order.
+	m_iSortTypeOrderIndex = 0;
+	m_eSortType = ePersonnelSoldierSortType_Rank;
+	m_bFlipSort = false;
 }
 
 simulated function UpdateListData()
@@ -331,6 +335,7 @@ simulated function UpdateListData()
 	}
 }
 
+// KDM : This is here only as a simple 'name wrapper'.
 simulated function SortListData()
 {
 	SortData();
@@ -361,6 +366,18 @@ simulated function UpdateList()
 		{
 			SoldierListItem.SetDisabled(true);
 		}
+	}
+}
+
+simulated function UpdateListSelection()
+{
+	if (SoldierUIFocused)
+	{
+		if (m_kList.ItemCount > 0) m_kList.SetSelectedIndex(0, true);
+	}
+	else
+	{
+		m_kList.ClearSelection();
 	}
 }
 
@@ -714,12 +731,6 @@ simulated function SetTabFocus(bool NewTabFocus, optional bool Forced = false)
 	}
 }
 
-simulated function ResetTabFocus()
-{
-	// KDM : By default, the squad's soldiers tab has focus.
-	SetTabFocus(false, true);
-}
-
 simulated function UpdateTabsForFocus()
 {
 	if (DisplayingAvailableSoldiers)
@@ -736,7 +747,6 @@ simulated function UpdateTabsForFocus()
 
 simulated function bool OnUnrealCommand(int cmd, int arg)
 {
-	// KDM TEMP : KEYBOARD KEYS
 	local bool bHandled;
 
 	if (!CheckInputIsReleaseOrDirectionRepeat(cmd, arg))
@@ -853,7 +863,7 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 		else if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_X)
 		{
 			m_bFlipSort = !m_bFlipSort;
-			UpdateListUI(false);
+			UpdateListUI(false, false);
 		}
 		// KDM : A button transfers a soldier to/from a squad, if possible.
 		else if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_A)
@@ -862,7 +872,8 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 		}
 		else
 		{
-			bHandled = false;
+			bHandled = m_kList.OnUnrealCommand(cmd, arg);
+			// bHandled = false;
 		}
 	}
 
@@ -914,11 +925,11 @@ simulated function OnSoldierSelected(UIList SquadList, int SelectedIndex)
 			SelectedIndex = SquadListSize - 1;
 		}
 		SquadList.SetSelectedIndex(SelectedIndex);
-		/* I DON'T THINK THIS IS NEEDED ANYMORE
-		if (m_kList.Scrollbar != none)
+
+		if (SquadList.Scrollbar != none)
 		{
-			m_kList.Scrollbar.SetThumbAtPercent(float(OrigSelectedIndex) / float(ListSize - 1));
-		}*/
+			SquadList.Scrollbar.SetThumbAtPercent(float(SelectedIndex) / float(SquadListSize - 1));
+		}
 	}
 }
 
@@ -969,7 +980,7 @@ simulated function bool CanTransferSoldier(StateObjectReference SoldierRef, opti
 defaultproperties
 {
 	PanelW = 985;
-	PanelH = 900;
+	PanelH = 985;
 
 	BorderPadding = 10;
 	
@@ -983,7 +994,7 @@ defaultproperties
 	m_eSortType = ePersonnelSoldierSortType_Rank;
 	
 	m_iMaskWidth = 961;
-	m_iMaskHeight = 658;
+	m_iMaskHeight = 670;
 
 	CurrentSquadIndex = -1;
 

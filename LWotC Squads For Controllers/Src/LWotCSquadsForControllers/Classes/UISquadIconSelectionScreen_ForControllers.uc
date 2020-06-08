@@ -64,6 +64,81 @@ function SetSquadImage(int ImageIndex)
 	OnCancel();
 }
 
+/* LW2
+simulated function OnReceiveFocus()
+{
+	//local Object ThisObj;
+	local XComGameState UpdateState;
+	local XComGameState_HeadquartersXCom XComHQ;
+
+	//this is for handling receiving focus back from UISquadSelect
+	//ThisObj = self;
+	//`XEVENTMGR.UnRegisterFromEvent(ThisObj, 'PostSquadSelectInit');
+
+	//restore previous squad to squad select, if there was one
+	if(bRestoreCachedSquad)
+	{
+		UpdateState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Restore previous soldiers to XComHQ Squad");
+		XComHQ = XComGameState_HeadquartersXCom(UpdateState.CreateStateObject(class'XComGameState_HeadquartersXCom', `XCOMHQ.ObjectID));
+		XComHQ.Squad = CachedSquad;
+		UpdateState.AddStateObject(XComHQ);
+		`GAMERULES.SubmitGameState(UpdateState);
+
+		bRestoreCachedSquad = false;
+		CachedSquad.Length = 0;
+	}
+	`LWTRACE("OnReceiveFocus: CurrentSquadSelect=" $ CurrentSquadSelection);
+	RefreshAllData();
+
+	super(UIScreen).OnReceiveFocus();
+}
+*/
+
+/* CONTROLLERIZED
+simulated function OnReceiveFocus()
+{
+	local XComGameState_HeadquartersXCom XComHQ;
+	local XComGameState UpdateState;
+	
+	// LWS : Restore previous squad after viewing them
+	if (bRestoreCachedSquad)
+	{
+		UpdateState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Restore previous soldiers to XComHQ Squad");
+		XComHQ = XComGameState_HeadquartersXCom(UpdateState.CreateStateObject(class'XComGameState_HeadquartersXCom', `XCOMHQ.ObjectID));
+		XComHQ.Squad = CachedSquad;
+		UpdateState.AddStateObject(XComHQ);
+		`GAMERULES.SubmitGameState(UpdateState);
+
+		bRestoreCachedSquad = false;
+		CachedSquad.Length = 0;
+
+		ReloadCurrentSquad();		// KDM : Reload current squads info
+	}
+	
+	// KDM : When we receive focus from :
+	// 1] Squad deletion 2] Squad name change 3] Squad bio change 4] Squad icon change
+	// ReloadCurrentSquad is called in the appropriate callback functions
+
+	UpdateNavHelp();
+
+	super(UIScreen).OnReceiveFocus();
+}
+
+simulated function OnLoseFocus()
+{
+	super.OnLoseFocus();
+	
+	// KDM : Within UIPersonnel, list selection is set in :
+	// 1] RefreshData --> UpdateList if SelectedIndexOnFocusLost is -1
+	// 2] OnReceieveFocus if SelectedIndexOnFocusLost is 0 or above
+	// This list selection change starts up my cached loading of soldiers.
+	// Within SquadBarracks I always reset everything when I receive focus and am not making
+	// use of SelectedIndexOnFocusLost in OnReceiveFocus; therefore, just unset it here 
+	// (after it is set in super)
+	SelectedIndexOnFocusLost = -1;				
+}
+*/
+
 simulated function bool OnUnrealCommand(int cmd, int arg)
 {
 	local bool bHandled;
