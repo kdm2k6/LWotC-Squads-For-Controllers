@@ -4,20 +4,25 @@ class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadS
 
 // KDM TO DO : IF NO SQUAD'S EXIST
 // NAVIGATION
+// FLIP SORT BUTTON WHEN CLICKED CALLS - RefreshData - might need to deal with that - actually probably just mouse stuff - controller dealt with in OnUnrealCommand
 
 // KDM : This is needed for the squad icon selector.
 var config array<string> SquadImagePaths;
 
 var localized string TitleStr, NoSquadsStr, DashesStr, StatusStr, MissionsStr, BiographyStr, SquadSoldiersStr, AvailableSoldiersStr;
 
-// KDM : Determines whether the list is displaying available soldiers, or the squad's soldiers.
+// KDM : Determines whether the squad UI, located at the top, or the soldier UI, located at the bottom, is focused.
+var bool SoldierUIFocused;
+
+// KDM : Determines whether the list is displaying available soldiers, or a squad's soldiers.
 var bool DisplayingAvailableSoldiers;
+
 var int CurrentSquadIndex;
 
 var bool bSelectSquad; // KDM UNUSED RIGHT NOW
 var int PanelW, PanelH;
 
-var int BorderPadding, FontSize; 
+var int BorderPadding; 
 var int SquadIconBorderSize, SquadIconSize;
 
 var UIPanel MainPanel;
@@ -157,6 +162,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	SquadSoldiersTab = Spawn(class'UIButton', MainPanel);
 	SquadSoldiersTab.ResizeToText = false;
 	SquadSoldiersTab.InitButton(, SquadSoldiersStr, , eUIButtonStyle_NONE);
+	SquadSoldiersTab.SetWarning(true);
 	SquadSoldiersTab.SetPosition(XLoc, YLoc);
 	SquadSoldiersTab.SetWidth(WidthVal);
 	
@@ -167,6 +173,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	AvailableSoldiersTab = Spawn(class'UIButton', MainPanel);
 	AvailableSoldiersTab.ResizeToText = false;
 	AvailableSoldiersTab.InitButton(, AvailableSoldiersStr, , eUIButtonStyle_NONE);
+	AvailableSoldiersTab.SetWarning(true);
 	AvailableSoldiersTab.SetPosition(XLoc, YLoc);
 	AvailableSoldiersTab.SetWidth(WidthVal);
 	
@@ -185,7 +192,6 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	CurrentSquadIndex = (SquadsExist()) ? 0 : -1;
 
 	UpdateAll();
-	
 }
 
 simulated function CreateListHeader()
@@ -215,6 +221,9 @@ simulated function UpdateAll()
 	UpdateListData();
 	SortListData();
 	UpdateListUI();
+
+	UpdateTabsForFocus();
+	UpdateUIForFocus();
 }
 
 simulated function UpdateSquadUI()
@@ -624,6 +633,59 @@ function EditSquadIcon()
 	}
 }
 
+simulated function ToggleUIFocus()
+{
+	SetUIFocus(!SoldierUIFocused);
+}
+
+simulated function SetUIFocus(bool NewUIFocus)
+{
+	SoldierUIFocused = NewUIFocus;
+}
+
+simulated function ResetUIFocus()
+{
+	// KDM : By default, the squad UI on top, has focus.
+	SetUIFocus(false);
+}
+
+simulated function UpdateUIForFocus()
+{
+	local int FocusAlpha, UnfocusAlpha, TopUIAlpha, BottomUIAlpha;
+
+	FocusAlpha = 100;
+	UnfocusAlpha = 75;
+
+	TopUIAlpha = (!SoldierUIFocused) ? FocusAlpha : UnfocusAlpha;
+	BottomUIAlpha = (SoldierUIFocused) ? FocusAlpha : UnfocusAlpha;
+	
+	SquadHeader.SetAlpha(TopUIAlpha);
+	CurrentSquadIcon.SetAlpha(TopUIAlpha);
+	CurrentSquadStatus.SetAlpha(TopUIAlpha);
+	CurrentSquadMissions.SetAlpha(TopUIAlpha);
+	SoldierIconList.SetAlpha(TopUIAlpha);
+	CurrentSquadBio.SetAlpha(TopUIAlpha);
+
+	SquadSoldiersTab.SetAlpha(BottomUIAlpha);
+	AvailableSoldiersTab.SetAlpha(BottomUIAlpha);
+	m_kSoldierSortHeader.SetAlpha(BottomUIAlpha);
+	m_kList.SetAlpha(BottomUIAlpha);
+}
+
+simulated function UpdateTabsForFocus()
+{
+	if (DisplayingAvailableSoldiers)
+	{
+		SquadSoldiersTab.SetSelected(false);
+		AvailableSoldiersTab.SetSelected(true);
+	}
+	else
+	{
+		SquadSoldiersTab.SetSelected(true);
+		AvailableSoldiersTab.SetSelected(false);
+	}
+}
+
 simulated function bool OnUnrealCommand(int cmd, int arg)
 {
 	// KDM TEMP : KEYBOARD KEYS
@@ -643,6 +705,19 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 
 	switch(cmd)
 	{
+		// KDM : Right stick click toggles focus between the squad UI, on top, and the soldier UI, on the bottom.
+		case class'UIUtilities_Input'.const.FXS_BUTTON_R3:
+			ToggleUIFocus();
+			UpdateUIForFocus();
+			break;
+
+
+
+
+
+
+
+
 		case class'UIUtilities_Input'.const.FXS_VIRTUAL_RSTICK_UP:
 			CurrentSquadBio.OnChildMouseEvent(none, class'UIUtilities_Input'.const.FXS_MOUSE_SCROLL_DOWN);
 			break;
@@ -757,8 +832,7 @@ defaultproperties
 	PanelH = 900;
 
 	BorderPadding = 10;
-	FontSize = 24;
-
+	
 	SquadIconSize = 144;
 	SquadIconBorderSize = 3;
 
@@ -771,6 +845,7 @@ defaultproperties
 
 	CurrentSquadIndex = -1;
 
+	SoldierUIFocused = false;
 	DisplayingAvailableSoldiers = false;
 }
 
