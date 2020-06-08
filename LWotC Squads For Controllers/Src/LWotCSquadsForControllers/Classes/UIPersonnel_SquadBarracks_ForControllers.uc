@@ -4,8 +4,12 @@ class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadS
 
 // KDM TO DO : IF NO SQUAD'S EXIST
 // NAVIGATION
-// FLIP SORT BUTTON WHEN CLICKED CALLS - RefreshData - might need to deal with that - actually probably just mouse stuff - controller dealt with in OnUnrealCommand
-// WILL LIKELY NEED TO RESET SORTING COLUMN AND FLIP DURING MOST CIRCUMSTANCES
+// THINGS LIKE : `SCREENSTACK.IsInStack(class'UIPersonnel_SquadBarracks'); WILL CREATE PROBLEMS
+
+
+// KDM : NOT SURE IF I'M USING THESE YET
+var array<StateObjectReference> CachedSquad;
+var bool bRestoreCachedSquad;
 
 // KDM : This is needed for the squad icon selector.
 var config array<string> SquadImagePaths;
@@ -618,7 +622,7 @@ function OnRenameInputBoxClosed(string NewSquadName)
 		NewGameState.AddStateObject(CurrentSquadState);
 		`XCOMGAME.GameRuleset.SubmitGameState(NewGameState);
 
-		UpdateListUI(true);
+		UpdateSquadUI();
 	}
 }
 
@@ -651,7 +655,7 @@ function OnEditBiographyInputBoxClosed(string NewSquadBio)
 		NewGameState.AddStateObject(CurrentSquadState);
 		`XCOMGAME.GameRuleset.SubmitGameState(NewGameState);
 
-		UpdateListUI(true);
+		UpdateSquadUI();
 	}
 }
 
@@ -745,6 +749,90 @@ simulated function UpdateTabsForFocus()
 	}
 }
 
+// KDM : TO FINISH FUNCTION
+simulated function OnReceiveFocus()
+{
+	local XComGameState_HeadquartersXCom XComHQ;
+	local XComGameState NewGameState;
+
+	// LWS : If you were in 'view mode', restore the previously selected squad.
+	if (bRestoreCachedSquad)
+	{
+		NewGameState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Restore previous soldiers to XComHQ Squad");
+		XComHQ = XComGameState_HeadquartersXCom(NewGameState.CreateStateObject(class'XComGameState_HeadquartersXCom', `XCOMHQ.ObjectID));
+		XComHQ.Squad = CachedSquad;
+		NewGameState.AddStateObject(XComHQ);
+		`GAMERULES.SubmitGameState(NewGameState);
+
+		bRestoreCachedSquad = false;
+		CachedSquad.Length = 0;
+
+		// KDM : IS THE CURRENT INDEX AND UI STILL OK? NEED TO TEST.
+		// CurrentSquadIndex = ((CurrentSquadIndex - 1) < 0) ? (GetTotalSquads() - 1) : CurrentSquadIndex - 1;
+		// UpdateAll(true, true);
+	}
+
+	// KDM : When we receive focus from :
+	// 1] Squad deletion 2] Squad name change 3] Squad bio change 4] Squad icon change
+	// ReloadCurrentSquad is called in the appropriate callback functions
+
+	//UpdateNavHelp();
+
+	super(UIScreen).OnReceiveFocus();
+}
+
+// KDM : TO FINISH FUNCTION
+function ViewCurrentSquad()
+{
+	local XComGameState NewGameState;
+	local XComGameState_LWPersistentSquad CurrentSquadState;
+	local XComGameState_LWSquadManager SquadManager, UpdatedSquadManager;
+	local UISquadSelect SquadSelect;
+	local UISquadContainer SquadContainer;
+
+	if (!CurrentSquadIsValid()) return;
+	
+	CurrentSquadState = GetCurrentSquad();
+
+	if (bSelectSquad && CurrentSquadState.bOnMission) return;
+
+	if (bSelectSquad)
+	{
+		NewGameState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Assign persistent squad as current mission squad");
+		SquadManager = `LWSQUADMGR;
+		UpdatedSquadManager = XComGameState_LWSquadManager(NewGameState.CreateStateObject(SquadManager.Class, SquadManager.ObjectID));
+		NewGameState.AddStateObject(UpdatedSquadManager);
+		UpdatedSquadManager.LaunchingMissionSquad = CurrentSquadState.GetReference();
+	
+		CurrentSquadState.SetSquadCrew(NewGameState, false, false);
+
+		`GAMERULES.SubmitGameState(NewGameState);
+
+		SquadSelect = SquadManager.GetSquadSelect();
+		/*if (SquadSelect != none)
+		{
+			SquadContainer = UISquadContainer(SquadSelect.GetChildByName('SquadSelect_SquadContainer_LW', false));
+		}
+		if (SquadContainer != none)
+		{
+			SquadContainer.SquadButton.SquadRef = CurrentSquadState.GetReference();
+			SquadContainer.SquadButton.Update(); // this updates the active squad in the button
+			SquadContainer.SquadButton.OnLoseFocus();
+		}*/
+		
+		CloseScreen();
+	}
+	else
+	{
+		CurrentSquadState.SetSquadCrew(, CurrentSquadState.bTemporary, true);
+
+		CachedSquad = `XCOMHQ.Squad;
+		bRestoreCachedSquad = true;
+
+		`HQPRES.UISquadSelect();
+	}
+}
+
 simulated function bool OnUnrealCommand(int cmd, int arg)
 {
 	local bool bHandled;
@@ -819,6 +907,11 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 				CurrentSquadBio.OnChildMouseEvent(none, class'UIUtilities_Input'.const.FXS_MOUSE_SCROLL_UP);
 				break;
 
+			// KDM : Select button views the squad.
+			case class'UIUtilities_Input'.const.FXS_BUTTON_SELECT:
+				ViewCurrentSquad();
+				break;
+
 			default:
 				bHandled = false;
 				break;
@@ -873,7 +966,6 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 		else
 		{
 			bHandled = m_kList.OnUnrealCommand(cmd, arg);
-			// bHandled = false;
 		}
 	}
 
