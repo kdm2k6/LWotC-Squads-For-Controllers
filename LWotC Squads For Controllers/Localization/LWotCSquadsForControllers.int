@@ -6,6 +6,8 @@ TitleStr="SQUAD [<XGParam:IntValue0>/<XGParam:IntValue1>] : <XGParam:StrValue0>"
 StatusStr = "SQUAD STATUS : <XGParam:StrValue0>"
 MissionsStr="MISSIONS : <XGParam:IntValue0>"
 BiographyStr="Squad Biography : <XGParam:StrValue0>"
+SquadSoldiersStr="SQUAD SOLDIERS"
+AvailableSoldiersStr="AVAILABLE SOLDIERS"
 
 NoSquadsStr="NONE AVAILABLE"
 DashesStr = "---------------"

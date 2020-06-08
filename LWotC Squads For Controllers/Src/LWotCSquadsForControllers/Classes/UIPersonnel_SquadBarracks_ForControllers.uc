@@ -1,18 +1,20 @@
-// MC.ChildFunctionVoid("personnelSort", "MoveToHighestDepth");
 // Default flash background is - X/Y/WIDTH/HEIGHT : 480.0000 90.0000 1000.0000 895.9500
 
 class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadSettings);
 
 // KDM TO DO : IF NO SQUAD'S EXIST
+// NAVIGATION
 
 // KDM : This is needed for the squad icon selector.
 var config array<string> SquadImagePaths;
 
-var localized string TitleStr, NoSquadsStr, DashesStr, StatusStr, MissionsStr, BiographyStr;
+var localized string TitleStr, NoSquadsStr, DashesStr, StatusStr, MissionsStr, BiographyStr, SquadSoldiersStr, AvailableSoldiersStr;
 
+// KDM : Determines whether the list is displaying available soldiers, or the squad's soldiers.
+var bool DisplayingAvailableSoldiers;
 var int CurrentSquadIndex;
 
-var bool bSelectSquad;
+var bool bSelectSquad; // KDM UNUSED RIGHT NOW
 var int PanelW, PanelH;
 
 var int BorderPadding, FontSize; 
@@ -33,8 +35,11 @@ simulated function OnInit()
 {
 	super.OnInit();
 
-	// KDM : Hide the pre-built flash background panel; we use our own custom UI.
+	// KDM : Hide pre-built UI elements we won't be using via Flash; the alternative is to spawn them, init them with the appropriate
+	// MC name, then hide them.
 	MC.ChildFunctionVoid("SoldierListBG", "Hide");
+	MC.ChildFunctionVoid("deceasedSort", "Hide");
+	MC.ChildFunctionVoid("personnelSort", "Hide");
 }
 
 simulated function InitScreen(XComPlayerController InitController, UIMovie InitMovie, optional name InitName)
@@ -147,11 +152,11 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 
 	// KDM : Squad soldiers tab.
 	XLoc = BorderPadding;
-	YLoc = SquadIconBG1.Y + SquadIconBG1.Height + BorderPadding;
+	YLoc = SquadIconBG1.Y + SquadIconBG1.Height + 10;
 	WidthVal = int(float(AvailableW) * 0.5);
 	SquadSoldiersTab = Spawn(class'UIButton', MainPanel);
 	SquadSoldiersTab.ResizeToText = false;
-	SquadSoldiersTab.InitButton(, "Squad soldiers tab", , eUIButtonStyle_NONE);
+	SquadSoldiersTab.InitButton(, SquadSoldiersStr, , eUIButtonStyle_NONE);
 	SquadSoldiersTab.SetPosition(XLoc, YLoc);
 	SquadSoldiersTab.SetWidth(WidthVal);
 	
@@ -161,16 +166,55 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	WidthVal = int(float(AvailableW) * 0.5);
 	AvailableSoldiersTab = Spawn(class'UIButton', MainPanel);
 	AvailableSoldiersTab.ResizeToText = false;
-	AvailableSoldiersTab.InitButton(, "Available soldiers tab", , eUIButtonStyle_NONE);
+	AvailableSoldiersTab.InitButton(, AvailableSoldiersStr, , eUIButtonStyle_NONE);
 	AvailableSoldiersTab.SetPosition(XLoc, YLoc);
 	AvailableSoldiersTab.SetWidth(WidthVal);
 	
+	CreateListHeader();
+
+	// KDM : Soldier list.
+	XLoc = MainPanel.X + SquadSoldiersTab.X;
+	YLoc = MainPanel.Y + SquadSoldiersTab.Y + 75;
+	m_kList = Spawn(class'UIList', self);
+	m_kList.bStickyHighlight = false;
+	m_kList.InitList('listAnchor', XLoc, YLoc, m_iMaskWidth, m_iMaskHeight);
+	m_kList.MoveToHighestDepth();
+
 	// KDM : If at least 1 squad exists, select the 1st one by setting CurrentSquadIndex to 0.
 	// If no squads exist, signify this by setting CurrentSquadIndex to -1.
 	CurrentSquadIndex = (SquadsExist()) ? 0 : -1;
 
-	UpdateSquadUI();
+	UpdateAll();
 	
+}
+
+simulated function CreateListHeader()
+{
+	local int XLoc, YLoc;
+
+	// KDM : Create the header container.
+	XLoc = MainPanel.X + SquadSoldiersTab.X;
+	YLoc = MainPanel.Y + SquadSoldiersTab.Y + 35;
+	m_kSoldierSortHeader = Spawn(class'UIPanel', self);
+	m_kSoldierSortHeader.bIsNavigable = false;
+	m_kSoldierSortHeader.InitPanel('soldierSort', 'SoldierSortHeader');
+	m_kSoldierSortheader.SetPosition(XLoc, YLoc);
+	m_kSoldierSortHeader.MoveToHighestDepth();
+	
+	// KDM : Fill the header container with header buttons.
+	Spawn(class'UIFlipSortButton', m_kSoldierSortHeader).InitFlipSortButton("rankButton", ePersonnelSoldierSortType_Rank, m_strButtonLabels[ePersonnelSoldierSortType_Rank]);
+	Spawn(class'UIFlipSortButton', m_kSoldierSortHeader).InitFlipSortButton("nameButton", ePersonnelSoldierSortType_Name, m_strButtonLabels[ePersonnelSoldierSortType_Name]);
+	Spawn(class'UIFlipSortButton', m_kSoldierSortHeader).InitFlipSortButton("classButton", ePersonnelSoldierSortType_Class, m_strButtonLabels[ePersonnelSoldierSortType_Class]);
+	Spawn(class'UIFlipSortButton', m_kSoldierSortHeader).InitFlipSortButton("statusButton", ePersonnelSoldierSortType_Status, m_strButtonLabels[ePersonnelSoldierSortType_Status], m_strButtonValues[ePersonnelSoldierSortType_Status]);
+}
+
+simulated function UpdateAll()
+{
+	UpdateSquadUI();
+
+	UpdateListData();
+	SortListData();
+	UpdateListUI();
 }
 
 simulated function UpdateSquadUI()
@@ -233,6 +277,58 @@ simulated function UpdateSquadUI()
 	ParamTag.StrValue0 = CurrentSquadState.sSquadBiography;
 	SquadBio = `XEXPAND.ExpandString(BiographyStr);
 	CurrentSquadBio.SetText(SquadBio);
+}
+
+simulated function UpdateListData()
+{
+	local XComGameState_LWSquadManager SquadManager;
+
+	SquadManager = `LWSQUADMGR;
+	m_arrSoldiers.Length = 0;
+
+	if (!CurrentSquadIsValid()) return;
+
+	if (DisplayingAvailableSoldiers)
+	{
+		m_arrSoldiers = SquadManager.GetUnassignedSoldiers();
+	}
+	else
+	{
+		m_arrSoldiers = SquadManager.GetSquad(CurrentSquadIndex).GetSoldierRefs(true);
+	}
+}
+
+simulated function SortListData()
+{
+	SortData();
+}
+
+simulated function UpdateListUI()
+{
+	local int i;
+	local UIPersonnel_ListItem SoldierListItem;
+	local XComGameState_LWPersistentSquad CurrentSquadState;
+	
+	super.UpdateList();
+
+	CurrentSquadState = GetCurrentSquad();
+
+	// LW2 : Determine whether each soldier can be transferred or not.
+	for (i = 0; i < m_kList.itemCount; i++)
+	{
+		SoldierListItem = UIPersonnel_ListItem(m_kList.GetItem(i));
+
+		// LW2 : If we are viewing a squad on a mission, mark units not on the mission with a lower alpha value.
+		if ((CurrentSquadState != none) && CurrentSquadState.IsDeployedOnMission() && (!CurrentSquadState.IsSoldierOnMission(SoldierListItem.UnitRef)))
+		{
+			SoldierListItem.SetAlpha(30);
+		}
+
+		if (!CanTransferSoldier(SoldierListItem.UnitRef))
+		{
+			SoldierListItem.SetDisabled(true);
+		}
+	}
 }
 
 // KDM : LW2 function.
@@ -365,7 +461,7 @@ simulated function NextSquad()
 	if (!CurrentSquadIsValid()) return;
 
 	CurrentSquadIndex = ((CurrentSquadIndex + 1) >=  GetTotalSquads()) ? 0 : CurrentSquadIndex + 1;
-	UpdateSquadUI();
+	UpdateAll();
 }
 
 simulated function PrevSquad()
@@ -373,7 +469,7 @@ simulated function PrevSquad()
 	if (!CurrentSquadIsValid()) return;
 
 	CurrentSquadIndex = ((CurrentSquadIndex - 1) < 0) ? (GetTotalSquads() - 1) : CurrentSquadIndex - 1;
-	UpdateSquadUI();
+	UpdateAll();
 }
 
 simulated function CreateSquad()
@@ -387,7 +483,7 @@ simulated function CreateSquad()
 
 	// KDM : Since we added 1 squad above, TotalSquads is now the 'index' of the last squad in the array; the squad we just added.
 	CurrentSquadIndex = TotalSquads;
-	UpdateSquadUI();
+	UpdateAll();
 }
 
 simulated function DeleteSelectedSquad()
@@ -439,7 +535,7 @@ simulated function OnDeleteSelectedSquadCallback(Name eAction)
 			CurrentSquadIndex = TotalSquads - 1;
 		}
 		
-		UpdateSquadUI();
+		UpdateAll();
 	}
 }
 
@@ -472,7 +568,7 @@ function OnRenameInputBoxClosed(string NewSquadName)
 		NewGameState.AddStateObject(CurrentSquadState);
 		`XCOMGAME.GameRuleset.SubmitGameState(NewGameState);
 
-		UpdateSquadUI();
+		UpdateAll();
 	}
 }
 
@@ -505,7 +601,7 @@ function OnEditBiographyInputBoxClosed(string NewSquadBio)
 		NewGameState.AddStateObject(CurrentSquadState);
 		`XCOMGAME.GameRuleset.SubmitGameState(NewGameState);
 
-		UpdateSquadUI();
+		UpdateAll();
 	}
 }
 
@@ -611,11 +707,53 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 	return bHandled || super(UIScreen).OnUnrealCommand(cmd, arg);
 }
 
+simulated function bool CanTransferSoldier(StateObjectReference SoldierRef, optional XComGameState_LWPersistentSquad CurrentSquadState)
+{
+	local int CurrentSquadSize, MaxSquadSize;
+	local XComGameState_Unit CurrentSoldierState;
+	
+	CurrentSoldierState = XComGameState_Unit(`XCOMHISTORY.GetGameStateForObjectID(SoldierRef.ObjectID));
 
+	// LW2 : You can't move soldiers on a mission; this does not include haven liaisons.
+	if (class'LWDLCHelpers'.static.IsUnitOnMission(CurrentSoldierState) && (!`LWOUTPOSTMGR.IsUnitAHavenLiaison(CurrentSoldierState.GetReference())))
+	{
+		return false;
+	}
+
+	if (CurrentSquadState == none)
+	{
+		CurrentSquadState = GetCurrentSquad();
+	}
+
+	if (CurrentSquadState != none)
+	{
+		// LW2 : You can't add soldiers to squads that are on a mission.
+		if(CurrentSquadState.bOnMission || CurrentSquadState.CurrentMission.ObjectID > 0)
+		{
+			if (DisplayingAvailableSoldiers)
+			{
+				return false;
+			}
+		}
+
+		// LW2 : You can't add soldiers to a max size squad.
+		CurrentSquadSize = CurrentSquadState.GetSoldiers().Length;
+		MaxSquadSize = class'XComGameState_LWSquadManager'.default.MAX_SQUAD_SIZE;
+		if (CurrentSquadSize >= MaxSquadSize)
+		{
+			if (DisplayingAvailableSoldiers)
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
 
 defaultproperties
 {
-	PanelW = 961;
+	PanelW = 985;
 	PanelH = 900;
 
 	BorderPadding = 10;
@@ -624,12 +762,16 @@ defaultproperties
 	SquadIconSize = 144;
 	SquadIconBorderSize = 3;
 
+	// KDM : Some of UIPersonnel's functions rely upon m_eListType and m_eCurrentTab being set; therefore, set them here.
 	m_eListType = eUIPersonnel_Soldiers;
+	m_eCurrentTab = eUIPersonnel_Soldiers;
 	
 	m_iMaskWidth = 961;
 	m_iMaskHeight = 658;
 
 	CurrentSquadIndex = -1;
+
+	DisplayingAvailableSoldiers = false;
 }
 
 // Looks like UIPersonnel size is
