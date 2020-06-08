@@ -191,7 +191,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	// If no squads exist, signify this by setting CurrentSquadIndex to -1.
 	CurrentSquadIndex = (SquadsExist()) ? 0 : -1;
 
-	UpdateAll();
+	UpdateAll(true, true);
 }
 
 simulated function CreateListHeader()
@@ -214,16 +214,19 @@ simulated function CreateListHeader()
 	Spawn(class'UIFlipSortButton', m_kSoldierSortHeader).InitFlipSortButton("statusButton", ePersonnelSoldierSortType_Status, m_strButtonLabels[ePersonnelSoldierSortType_Status], m_strButtonValues[ePersonnelSoldierSortType_Status]);
 }
 
-simulated function UpdateAll()
+simulated function UpdateAll(optional bool _ResetUIFocus = false, optional bool _ResetTabFocus = false)
 {
+	if (_ResetUIFocus) ResetUIFocus();
+	if (_ResetTabFocus) ResetTabFocus();
+	
 	UpdateSquadUI();
 
 	UpdateListData();
 	SortListData();
 	UpdateListUI();
 
-	UpdateTabsForFocus();
-	UpdateUIForFocus();
+	// UpdateTabsForFocus();
+	// UpdateUIForFocus();
 }
 
 simulated function UpdateSquadUI()
@@ -470,7 +473,7 @@ simulated function NextSquad()
 	if (!CurrentSquadIsValid()) return;
 
 	CurrentSquadIndex = ((CurrentSquadIndex + 1) >=  GetTotalSquads()) ? 0 : CurrentSquadIndex + 1;
-	UpdateAll();
+	UpdateAll(false, true);
 }
 
 simulated function PrevSquad()
@@ -478,7 +481,7 @@ simulated function PrevSquad()
 	if (!CurrentSquadIsValid()) return;
 
 	CurrentSquadIndex = ((CurrentSquadIndex - 1) < 0) ? (GetTotalSquads() - 1) : CurrentSquadIndex - 1;
-	UpdateAll();
+	UpdateAll(false, true);
 }
 
 simulated function CreateSquad()
@@ -492,7 +495,7 @@ simulated function CreateSquad()
 
 	// KDM : Since we added 1 squad above, TotalSquads is now the 'index' of the last squad in the array; the squad we just added.
 	CurrentSquadIndex = TotalSquads;
-	UpdateAll();
+	UpdateAll(false, true);
 }
 
 simulated function DeleteSelectedSquad()
@@ -544,7 +547,7 @@ simulated function OnDeleteSelectedSquadCallback(Name eAction)
 			CurrentSquadIndex = TotalSquads - 1;
 		}
 		
-		UpdateAll();
+		UpdateAll(false, true);
 	}
 }
 
@@ -577,7 +580,7 @@ function OnRenameInputBoxClosed(string NewSquadName)
 		NewGameState.AddStateObject(CurrentSquadState);
 		`XCOMGAME.GameRuleset.SubmitGameState(NewGameState);
 
-		UpdateAll();
+		UpdateSquadUI();
 	}
 }
 
@@ -610,7 +613,7 @@ function OnEditBiographyInputBoxClosed(string NewSquadBio)
 		NewGameState.AddStateObject(CurrentSquadState);
 		`XCOMGAME.GameRuleset.SubmitGameState(NewGameState);
 
-		UpdateAll();
+		UpdateSquadUI();
 	}
 }
 
@@ -638,9 +641,13 @@ simulated function ToggleUIFocus()
 	SetUIFocus(!SoldierUIFocused);
 }
 
-simulated function SetUIFocus(bool NewUIFocus)
+simulated function SetUIFocus(bool NewUIFocus, optional bool Forced = false)
 {
-	SoldierUIFocused = NewUIFocus;
+	if (Forced || (SoldierUIFocused != NewUIFocus))
+	{
+		SoldierUIFocused = NewUIFocus;
+		UpdateUIForFocus();
+	}
 }
 
 simulated function ResetUIFocus()
@@ -672,6 +679,26 @@ simulated function UpdateUIForFocus()
 	m_kList.SetAlpha(BottomUIAlpha);
 }
 
+simulated function ToggleTabFocus()
+{
+	SetTabFocus(!DisplayingAvailableSoldiers);
+}
+
+simulated function SetTabFocus(bool NewTabFocus, optional bool Forced = false)
+{
+	if (Forced || (DisplayingAvailableSoldiers != NewTabFocus))
+	{
+		DisplayingAvailableSoldiers = NewTabFocus;
+		UpdateTabsForFocus();
+	}
+}
+
+simulated function ResetTabFocus()
+{
+	// KDM : By default, the squad's soldiers tab has focus.
+	SetTabFocus(false);
+}
+
 simulated function UpdateTabsForFocus()
 {
 	if (DisplayingAvailableSoldiers)
@@ -700,83 +727,86 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 	//`log("KDM *** :" @ TempPanel.X @ TempPanel.Y @ TempPanel.Width @ TempPanel.Height);
 	//`log("KDM *** :" @ MC.GetNum("SoldierListBG._x") @ MC.GetNum("SoldierListBG._y") @ MC.GetNum("SoldierListBG._width") @ MC.GetNum("SoldierListBG._height"));
 	
-
 	bHandled = true;
 
-	switch(cmd)
+	// KDM : Right stick click toggles focus between the squad UI, on top, and the soldier UI, on the bottom.
+	if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_R3)
 	{
-		// KDM : Right stick click toggles focus between the squad UI, on top, and the soldier UI, on the bottom.
-		case class'UIUtilities_Input'.const.FXS_BUTTON_R3:
-			ToggleUIFocus();
-			UpdateUIForFocus();
-			break;
+		ToggleUIFocus();
+	}
+	else if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_B)
+	{
+		CloseScreen();
+	}
+	else if (!SoldierUIFocused)
+	{
+		switch(cmd)
+		{
+			// KDM : Y button creates a squad.
+			case class'UIUtilities_Input'.const.FXS_BUTTON_Y:
+				CreateSquad();
+				break;
 
+			// KDM : X button deletes the selected squad.
+			case class'UIUtilities_Input'.const.FXS_BUTTON_X:
+				DeleteSelectedSquad();
+				break;
 
+			// KDM : Left bumper selects the previous squad.
+			case class'UIUtilities_Input'.const.FXS_BUTTON_LBUMPER:
+				PrevSquad();
+				break;
 
+			// KDM : Right bumper selects the next squad
+			case class'UIUtilities_Input'.const.FXS_BUTTON_RBUMPER:
+				NextSquad();
+				break;
 
+			// KDM : Left stick click changes squad icon.
+			case class'UIUtilities_Input'.const.FXS_BUTTON_L3:
+				EditSquadIcon();
+				break;
 
+			// KDM : Left trigger renames the squad.
+			case class'UIUtilities_Input'.const.FXS_BUTTON_LTRIGGER:
+				RenameSquad();
+				break;
+			
+			// KDM : Right trigger edits the biography.
+			case class'UIUtilities_Input'.const.FXS_BUTTON_RTRIGGER:
+				EditSquadBiography();
+				break;
 
+			// KDM : Right stick up tells the squad biography to scroll up, if it is larger than its container size.
+			case class'UIUtilities_Input'.const.FXS_VIRTUAL_RSTICK_UP:
+				CurrentSquadBio.OnChildMouseEvent(none, class'UIUtilities_Input'.const.FXS_MOUSE_SCROLL_DOWN);
+				break;
 
+			// KDM : Right stick down tells the squad biography to scroll down, if it is larger than its container size.
+			case class'UIUtilities_Input'.const.FXS_VIRTUAL_RSTICK_DOWN:
+				CurrentSquadBio.OnChildMouseEvent(none, class'UIUtilities_Input'.const.FXS_MOUSE_SCROLL_UP);
+				break;
 
-		case class'UIUtilities_Input'.const.FXS_VIRTUAL_RSTICK_UP:
-			CurrentSquadBio.OnChildMouseEvent(none, class'UIUtilities_Input'.const.FXS_MOUSE_SCROLL_DOWN);
-			break;
-
-		case class'UIUtilities_Input'.const.FXS_VIRTUAL_RSTICK_DOWN:
-			CurrentSquadBio.OnChildMouseEvent(none, class'UIUtilities_Input'.const.FXS_MOUSE_SCROLL_UP);
-			break;
-
-		// KDM : Left trigger changes squad icon.
-		case class'UIUtilities_Input'.const.FXS_BUTTON_LTRIGGER:
-		case class'UIUtilities_Input'.const.FXS_KEY_Z:
-			EditSquadIcon();
-			break;
-
-		// KDM : Right stick click edit the biography.
-		case class'UIUtilities_Input'.const.FXS_BUTTON_R3:
-		case class'UIUtilities_Input'.const.FXS_KEY_Y:
-			EditSquadBiography();
-			break;
-
-		// KDM : Left stick click renames the squad.
-		case class'UIUtilities_Input'.const.FXS_BUTTON_L3:
-		case class'UIUtilities_Input'.const.FXS_KEY_X:
-			RenameSquad();
-			break;
-
-		// KDM : Y button creates a squad.
-		case class'UIUtilities_Input'.const.FXS_BUTTON_Y:
-		case class'UIUtilities_Input'.const.FXS_KEY_E:
-			CreateSquad();
-			break;
-
-		// KDM : X button deletes the selected squad.
-		case class'UIUtilities_Input'.const.FXS_BUTTON_X:
-		case class'UIUtilities_Input'.const.FXS_KEY_Q:
-			DeleteSelectedSquad();
-			break;
-
-		// KDM : Left bumper selects the previous squad.
-		case class'UIUtilities_Input'.const.FXS_BUTTON_LBUMPER:
-		case class'UIUtilities_Input'.const.FXS_ARROW_LEFT:
-			PrevSquad();
-			break;
-
-		// KDM : Right bumper selects the next squad
-		case class'UIUtilities_Input'.const.FXS_BUTTON_RBUMPER:
-		case class'UIUtilities_Input'.const.FXS_ARROW_RIGHT:
-			NextSquad();
-			break;
-
-		case class'UIUtilities_Input'.const.FXS_BUTTON_B:
-		case class'UIUtilities_Input'.const.FXS_KEY_ESCAPE:
-		case class'UIUtilities_Input'.const.FXS_R_MOUSE_DOWN:
-			CloseScreen();
-			break;
-
-		default:
+			default:
+				bHandled = false;
+				break;
+		}
+	}
+	else if (SoldierUIFocused)
+	{
+		// KDM : Left bumper displays squad's soldiers while right bumper displays available soldiers.
+		if (((cmd == class'UIUtilities_Input'.const.FXS_BUTTON_LBUMPER) && DisplayingAvailableSoldiers) ||
+			((cmd == class'UIUtilities_Input'.const.FXS_BUTTON_RBUMPER) && (!DisplayingAvailableSoldiers)))
+		{
+			ToggleTabFocus();
+			UpdateListData();
+			SortListData();
+			UpdateListUI();
+		}
+		else
+		{
 			bHandled = false;
-			break;
+		}
 	}
 
 	return bHandled || super(UIScreen).OnUnrealCommand(cmd, arg);
