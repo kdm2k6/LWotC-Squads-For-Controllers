@@ -191,7 +191,8 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	// If no squads exist, signify this by setting CurrentSquadIndex to -1.
 	CurrentSquadIndex = (SquadsExist()) ? 0 : -1;
 
-	UpdateAll(true, true);
+	SetUIFocus(false, true);
+	UpdateAll(true);
 }
 
 simulated function CreateListHeader()
@@ -214,19 +215,10 @@ simulated function CreateListHeader()
 	Spawn(class'UIFlipSortButton', m_kSoldierSortHeader).InitFlipSortButton("statusButton", ePersonnelSoldierSortType_Status, m_strButtonLabels[ePersonnelSoldierSortType_Status], m_strButtonValues[ePersonnelSoldierSortType_Status]);
 }
 
-simulated function UpdateAll(optional bool _ResetUIFocus = false, optional bool _ResetTabFocus = false)
+simulated function UpdateAll(optional bool _ResetTabFocus = false)
 {
-	if (_ResetUIFocus) ResetUIFocus();
-	if (_ResetTabFocus) ResetTabFocus();
-	
 	UpdateSquadUI();
-
-	UpdateListData();
-	SortListData();
-	UpdateListUI();
-
-	// UpdateTabsForFocus();
-	// UpdateUIForFocus();
+	UpdateListUI(_ResetTabFocus);
 }
 
 simulated function UpdateSquadUI()
@@ -291,6 +283,36 @@ simulated function UpdateSquadUI()
 	CurrentSquadBio.SetText(SquadBio);
 }
 
+simulated function UpdateListUI(optional bool _ResetTabFocus = false)
+{
+	if (_ResetTabFocus) 
+	{
+		ResetTabFocus();
+	}
+
+	UpdateListData();
+	SortListData();
+	UpdateList();
+
+	UpdateListSelection();
+}
+
+
+
+simulated function UpdateListSelection()
+{
+	if (SoldierUIFocused)
+	{
+		if (m_kList.ItemCount > 0) m_kList.SetSelectedIndex(0, true);
+	}
+	else
+	{
+		m_kList.ClearSelection();
+	}
+}
+
+
+
 simulated function UpdateListData()
 {
 	local XComGameState_LWSquadManager SquadManager;
@@ -315,7 +337,7 @@ simulated function SortListData()
 	SortData();
 }
 
-simulated function UpdateListUI()
+simulated function UpdateList()
 {
 	local int i;
 	local UIPersonnel_ListItem SoldierListItem;
@@ -473,7 +495,7 @@ simulated function NextSquad()
 	if (!CurrentSquadIsValid()) return;
 
 	CurrentSquadIndex = ((CurrentSquadIndex + 1) >=  GetTotalSquads()) ? 0 : CurrentSquadIndex + 1;
-	UpdateAll(false, true);
+	UpdateAll(true);
 }
 
 simulated function PrevSquad()
@@ -481,7 +503,7 @@ simulated function PrevSquad()
 	if (!CurrentSquadIsValid()) return;
 
 	CurrentSquadIndex = ((CurrentSquadIndex - 1) < 0) ? (GetTotalSquads() - 1) : CurrentSquadIndex - 1;
-	UpdateAll(false, true);
+	UpdateAll(true);
 }
 
 simulated function CreateSquad()
@@ -495,7 +517,7 @@ simulated function CreateSquad()
 
 	// KDM : Since we added 1 squad above, TotalSquads is now the 'index' of the last squad in the array; the squad we just added.
 	CurrentSquadIndex = TotalSquads;
-	UpdateAll(false, true);
+	UpdateAll(true);
 }
 
 simulated function DeleteSelectedSquad()
@@ -547,7 +569,7 @@ simulated function OnDeleteSelectedSquadCallback(Name eAction)
 			CurrentSquadIndex = TotalSquads - 1;
 		}
 		
-		UpdateAll(false, true);
+		UpdateAll(true);
 	}
 }
 
@@ -580,7 +602,7 @@ function OnRenameInputBoxClosed(string NewSquadName)
 		NewGameState.AddStateObject(CurrentSquadState);
 		`XCOMGAME.GameRuleset.SubmitGameState(NewGameState);
 
-		UpdateSquadUI();
+		UpdateListUI(true);
 	}
 }
 
@@ -613,7 +635,7 @@ function OnEditBiographyInputBoxClosed(string NewSquadBio)
 		NewGameState.AddStateObject(CurrentSquadState);
 		`XCOMGAME.GameRuleset.SubmitGameState(NewGameState);
 
-		UpdateSquadUI();
+		UpdateListUI(true);
 	}
 }
 
@@ -653,7 +675,7 @@ simulated function SetUIFocus(bool NewUIFocus, optional bool Forced = false)
 simulated function ResetUIFocus()
 {
 	// KDM : By default, the squad UI on top, has focus.
-	SetUIFocus(false);
+	SetUIFocus(false, true);
 }
 
 simulated function UpdateUIForFocus()
@@ -696,7 +718,7 @@ simulated function SetTabFocus(bool NewTabFocus, optional bool Forced = false)
 simulated function ResetTabFocus()
 {
 	// KDM : By default, the squad's soldiers tab has focus.
-	SetTabFocus(false);
+	SetTabFocus(false, true);
 }
 
 simulated function UpdateTabsForFocus()
@@ -733,6 +755,7 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 	if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_R3)
 	{
 		ToggleUIFocus();
+		UpdateListUI(true);
 	}
 	else if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_B)
 	{
@@ -799,9 +822,7 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 			((cmd == class'UIUtilities_Input'.const.FXS_BUTTON_RBUMPER) && (!DisplayingAvailableSoldiers)))
 		{
 			ToggleTabFocus();
-			UpdateListData();
-			SortListData();
-			UpdateListUI();
+			UpdateListUI(false);
 		}
 		else
 		{
@@ -869,6 +890,8 @@ defaultproperties
 	// KDM : Some of UIPersonnel's functions rely upon m_eListType and m_eCurrentTab being set; therefore, set them here.
 	m_eListType = eUIPersonnel_Soldiers;
 	m_eCurrentTab = eUIPersonnel_Soldiers;
+
+	m_eSortType = ePersonnelSoldierSortType_Rank;
 	
 	m_iMaskWidth = 961;
 	m_iMaskHeight = 658;

@@ -59,7 +59,7 @@ function SetSquadImage(int ImageIndex)
 	NewGameState.AddStateObject(CurrentSquadState);
 	`XCOMGAME.GameRuleset.SubmitGameState(NewGameState);
 
-	BelowScreen.UpdateSquadUI();
+	BelowScreen.UpdateListUI(true);
 	
 	OnCancel();
 }
