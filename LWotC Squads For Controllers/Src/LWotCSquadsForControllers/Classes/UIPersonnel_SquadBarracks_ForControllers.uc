@@ -781,19 +781,18 @@ simulated function OnReceiveFocus()
 	super(UIScreen).OnReceiveFocus();
 }
 
-// KDM : TO FINISH FUNCTION
 function ViewCurrentSquad()
 {
 	local XComGameState NewGameState;
 	local XComGameState_LWPersistentSquad CurrentSquadState;
 	local XComGameState_LWSquadManager SquadManager, UpdatedSquadManager;
-	local UISquadSelect SquadSelect;
-	local UISquadContainer SquadContainer;
-
+	
 	if (!CurrentSquadIsValid()) return;
 	
 	CurrentSquadState = GetCurrentSquad();
 
+	// KDM : In LW2, these conditions disabled the button whose click called this function. Since I create no such button,
+	// just return if these conditions are met.
 	if (bSelectSquad && CurrentSquadState.bOnMission) return;
 
 	if (bSelectSquad)
@@ -808,18 +807,6 @@ function ViewCurrentSquad()
 
 		`GAMERULES.SubmitGameState(NewGameState);
 
-		SquadSelect = SquadManager.GetSquadSelect();
-		/*if (SquadSelect != none)
-		{
-			SquadContainer = UISquadContainer(SquadSelect.GetChildByName('SquadSelect_SquadContainer_LW', false));
-		}
-		if (SquadContainer != none)
-		{
-			SquadContainer.SquadButton.SquadRef = CurrentSquadState.GetReference();
-			SquadContainer.SquadButton.Update(); // this updates the active squad in the button
-			SquadContainer.SquadButton.OnLoseFocus();
-		}*/
-		
 		CloseScreen();
 	}
 	else

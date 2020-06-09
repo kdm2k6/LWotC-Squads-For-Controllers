@@ -239,6 +239,24 @@ function SetSquad(optional StateObjectReference NewSquadRef)
 	SquadState.SetSquadCrew(, false /* bOnMissionSoldiers */ ,false /* bForDisplayOnly */);
 }
 
+simulated function OpenSquadManagement()
+{
+	local UIPersonnel_SquadBarracks_ForControllers SquadManagementScreen;
+	local XComHQPresentationLayer HQPres;
+
+	HQPres = `HQPRES;
+
+	// KDM : If we are viewing the squad through SquadBarracks, do not allow squad management to open.
+	// This simulates what is done with UISquadContainer.
+	if (HQPres.ScreenStack.IsInStack(class'UIPersonnel_SquadBarracks_ForControllers')) return;
+
+	SquadManagementScreen = HQPres.Spawn(class'UIPersonnel_SquadBarracks_ForControllers', HQPres);
+	SquadManagementScreen.bSelectSquad = true;
+	HQPres.ScreenStack.Push(SquadManagementScreen);
+
+	CloseScreen();
+}
+
 simulated function bool OnUnrealCommand(int cmd, int arg)
 {
 	local bool bHandled;
@@ -258,10 +276,16 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 
 	switch (cmd)
 	{
+		// KDM : B button closes the screen.
 		case class'UIUtilities_Input'.static.GetBackButtonInputCode() :
 			CloseScreen();
 			break;
 
+		// KDM : Select button opens the squad management screen.
+		case class'UIUtilities_Input'.const.FXS_BUTTON_SELECT:
+			OpenSquadManagement();
+			break;
+		
 		default:
 			bHandled = false;
 			break;
