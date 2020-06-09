@@ -143,7 +143,9 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 defaultproperties
 {
 	BorderPadding = 4;
-	TextSize = 32;
+	TextSize = 28;
 
-	Height = 44;
+	Height = 40;
+
+	// KDM : Originally I set Height to 44 and TextSize to 32; however, this was a little large.
 }

@@ -2,7 +2,7 @@ class UISquadMenu extends UIScreen;
 
 // TO DO : NAV STUFF
 
-var localized string TitleStr;
+var localized string SquadManagementStr, TitleStr;
 
 var int PanelH, PanelW;
 var int BorderPadding;
@@ -85,7 +85,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	
 	RefreshData();
 	
-	// UpdateNavHelp(); KDM TO DO
+	UpdateNavHelp();
 }
 
 simulated function RefreshData()
@@ -255,6 +255,27 @@ simulated function OpenSquadManagement()
 	HQPres.ScreenStack.Push(SquadManagementScreen);
 }
 
+simulated function UpdateNavHelp()
+{
+	local UINavigationHelp NavHelp;
+
+	NavHelp =`HQPRES.m_kAvengerHUD.NavHelp;
+	
+	NavHelp.ClearButtonHelp();
+	NavHelp.bIsVerticalHelp = true;
+	NavHelp.AddBackButton();
+	NavHelp.AddSelectNavHelp();
+	NavHelp.AddLeftHelp(CAPS(SquadManagementStr), class'UIUtilities_Input'.const.ICON_BACK_SELECT);
+	NavHelp.Show();
+}
+
+simulated function OnReceiveFocus()
+{
+	super.OnReceiveFocus();
+
+	UpdateNavHelp();
+}
+
 simulated function bool OnUnrealCommand(int cmd, int arg)
 {
 	local bool bHandled;
@@ -301,33 +322,13 @@ defaultproperties
 	BorderPadding = 10;
 
 	PanelW = 400;
-	PanelH = 400;
+	PanelH = 450;
 }
 
 
 
 
 /*
-simulated function UpdateNavHelp()
-{
-	local UINavigationHelp NavHelp;
-
-	NavHelp =`HQPRES.m_kAvengerHUD.NavHelp;
-	
-	NavHelp.ClearButtonHelp();
-	NavHelp.bIsVerticalHelp = false;
-	NavHelp.AddBackButton();
-	NavHelp.AddSelectNavHelp();
-	NavHelp.Show();
-}
-
-simulated function OnReceiveFocus()
-{
-	super.OnReceiveFocus();
-
-	SetNavHelpTimer();
-}
-
 simulated function SetNavHelpTimer()
 {
 	if (!IsTimerActive(nameof(UpdateNavHelp)))

@@ -8,7 +8,7 @@ event OnInit(UIScreen Screen)
 
 	HQPres = `HQPRES;
 
-	InSquadManagement = HQPres.ScreenStack.IsInStack(class'UIPersonnel_SquadBarracks');
+	InSquadManagement = HQPres.ScreenStack.IsInStack(class'UIPersonnel_SquadBarracks_ForControllers');
 
 	// KDM : If we are in the squad management screen we want to disable the squad menu.
 	// This is analogous to what is done in UIScreenListener_SquadSelect_LW.OnInit in regards to SquadContainer,
@@ -29,25 +29,57 @@ event OnInit(UIScreen Screen)
 
 simulated function bool OnRobojumperSquadSelectClick(UIScreen Screen, int cmd, int arg)
 {
-	local UISquadMenu SquadMenu;
-	local XComHQPresentationLayer HQPres;
-
 	if (!Screen.CheckInputIsReleaseOrDirectionRepeat(cmd, arg))
 	{
 		return false;
 	}
 
-	HQPres = `HQPRES;
-
 	// KDM : Left stick click brings up the squad menu.
 	if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_L3)
 	{
-		SquadMenu = HQPres.Spawn(class'UISquadMenu', HQPres);
-		HQPres.ScreenStack.Push(SquadMenu);
+		OpenSquadMenu(Screen);
 		return true;
 	}
 
 	return false;
+}
+
+simulated function OpenSquadMenu(UIScreen Screen)
+{
+	local robojumper_UISquadSelect SquadSelectScreen;
+	local UISquadMenu SquadMenu;
+	local XComHQPresentationLayer HQPres;
+
+	HQPres = `HQPRES;
+	SquadSelectScreen = robojumper_UISquadSelect(Screen);
+
+	if (SquadSelectScreen == none)
+	{
+		`log("*** There is a big problem with UIScreenListener_RobojumperSquadSelect : SquadSelectScreen == none ***");
+		return;
+	}
+
+	SquadMenu = HQPres.Spawn(class'UISquadMenu', HQPres);
+
+	// KDM : If Robojumper's Squad Select has the option "Skip Intro" turned on, bInstantLineupUI = true.
+	if (!SquadSelectScreen.bInstantLineupUI)
+	{
+		// KDM : Since we are bringing up a squad related menu, simply finish the intro cinematic if it is in progress.
+		// This actually creates a nice, zooming in effect.
+		SquadSelectScreen.FinishIntroCinematic();
+	}
+
+	HQPres.ScreenStack.Push(SquadMenu);
+
+	if (!SquadSelectScreen.bInstantLineupUI)
+	{
+		// KDM : Very strange problem that exists even with Robojumper's Squad Select and a normal game.
+		// robojumper_UISquadSelect.OnLoseFocus() sets bDirty to true; however, UISquadSelect.Cinematic_PawnsIdling.BeginState
+		// only calls SnapCamera() if bDirty is false. Without this call to SnapCamera(), the camera suddenly zooms into the
+		// squad's waist upon entering the idle state. Since I am only bringing up a menu, and the menu buttons update data 
+		// whenever they need to, setting bDirty to false seems fairly safe.
+		SquadSelectScreen.bDirty = false;
+	}
 }
 
 event OnRemoved(UIScreen Screen)
