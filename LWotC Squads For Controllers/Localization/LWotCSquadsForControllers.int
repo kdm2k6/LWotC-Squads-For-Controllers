@@ -1,6 +1,7 @@
 [UISquadMenu]
 TitleStr="Squad Menu"
-SquadManagementStr="Open Squad Management"
+SquadManagementStr="OPEN SQUAD MANAGEMENT"
+OpenSquadMenuStr="OPEN SQUAD MENU"
 
 [UIPersonnel_SquadBarracks_ForControllers]
 TitleStr="SQUAD [<XGParam:IntValue0>/<XGParam:IntValue1>] : <XGParam:StrValue0>"
@@ -12,4 +13,5 @@ AvailableSoldiersStr="AVAILABLE SOLDIERS"
 
 NoSquadsStr="NONE AVAILABLE"
 DashesStr = "---------------"
+
 

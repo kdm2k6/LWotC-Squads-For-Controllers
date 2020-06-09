@@ -1,8 +1,6 @@
 class UISquadMenu extends UIScreen;
 
-// TO DO : NAV STUFF
-
-var localized string SquadManagementStr, TitleStr;
+var localized string SquadManagementStr, TitleStr, OpenSquadMenuStr;
 
 var int PanelH, PanelW;
 var int BorderPadding;
@@ -173,10 +171,8 @@ simulated function OnSquadSelected(StateObjectReference SelectedSquadRef)
 {
 	local robojumper_UISquadSelect SquadSelectScreen;
 	local UISquadMenu_ListItem CurrentSquadIcon;
-	local XComHQPresentationLayer HQPres;
-
-	HQPres = `HQPRES;
-	SquadSelectScreen = robojumper_UISquadSelect(HQPres.ScreenStack.GetScreen(class'robojumper_UISquadSelect'));
+	
+	SquadSelectScreen = robojumper_UISquadSelect(`HQPRES.ScreenStack.GetScreen(class'robojumper_UISquadSelect'));
 
 	SetSquad(SelectedSquadRef);
 
@@ -185,13 +181,6 @@ simulated function OnSquadSelected(StateObjectReference SelectedSquadRef)
 	{
 		CurrentSquadIcon.SquadRef = SelectedSquadRef;
 		CurrentSquadIcon.Update();
-	}
-	
-	if (SquadSelectScreen != none)
-	{
-		// KDM : DO WE NEED TO DO BOTH OF THESE ? INVESTIGATE
-		SquadSelectScreen.UpdateData();
-		SquadSelectScreen.SignalOnReceiveFocus();
 	}
 
 	// KDM : Once a squad has been selected, just close the menu; I can't see any reason why someone would select several
@@ -236,23 +225,20 @@ function SetSquad(optional StateObjectReference NewSquadRef)
 	UpdateState.AddStateObject(XComHQ);
 	`GAMERULES.SubmitGameState(UpdateState);
 
-	SquadState.SetSquadCrew(, false /* bOnMissionSoldiers */ ,false /* bForDisplayOnly */);
+	SquadState.SetSquadCrew(, false , false);
 }
 
 simulated function OpenSquadManagement()
 {
 	local UIPersonnel_SquadBarracks_ForControllers SquadManagementScreen;
-	local XComHQPresentationLayer HQPres;
-
-	HQPres = `HQPRES;
-
+	
 	// KDM : If we are viewing the squad through SquadBarracks, do not allow squad management to open.
 	// This simulates what is done with UISquadContainer.
-	if (HQPres.ScreenStack.IsInStack(class'UIPersonnel_SquadBarracks_ForControllers')) return;
+	if (`HQPRES.ScreenStack.IsInStack(class'UIPersonnel_SquadBarracks_ForControllers')) return;
 
-	SquadManagementScreen = HQPres.Spawn(class'UIPersonnel_SquadBarracks_ForControllers', HQPres);
+	SquadManagementScreen = `HQPRES.Spawn(class'UIPersonnel_SquadBarracks_ForControllers', `HQPRES);
 	SquadManagementScreen.bSelectSquad = true;
-	HQPres.ScreenStack.Push(SquadManagementScreen);
+	`HQPRES.ScreenStack.Push(SquadManagementScreen);
 }
 
 simulated function UpdateNavHelp()
@@ -265,15 +251,41 @@ simulated function UpdateNavHelp()
 	NavHelp.bIsVerticalHelp = true;
 	NavHelp.AddBackButton();
 	NavHelp.AddSelectNavHelp();
-	NavHelp.AddLeftHelp(CAPS(SquadManagementStr), class'UIUtilities_Input'.const.ICON_BACK_SELECT);
+	NavHelp.AddLeftHelp(SquadManagementStr, class'UIUtilities_Input'.const.ICON_BACK_SELECT);
 	NavHelp.Show();
+}
+
+simulated function CloseScreen()
+{
+	local robojumper_UISquadSelect SquadSelectScreen;
+	
+	SquadSelectScreen = robojumper_UISquadSelect(`HQPRES.ScreenStack.GetScreen(class'robojumper_UISquadSelect'));
+
+	if (SquadSelectScreen != none)
+	{
+		// KDM : Update the squad select screen since we might have changed the selected squad or modified a squad
+		// via the squad management menu.
+		SquadSelectScreen.UpdateData();
+	}
+
+	super.CloseScreen();
 }
 
 simulated function OnReceiveFocus()
 {
 	super.OnReceiveFocus();
 
+	// KDM : We could be, potentially, coming back from the squad management menu where squads could have been added/deleted/modified.
+	// Therefore, it's important we update the data as well as the associated list.
+	RefreshData();
 	UpdateNavHelp();
+}
+
+simulated function OnLoseFocus()
+{
+	`HQPRES.m_kAvengerHUD.NavHelp.ClearButtonHelp();
+
+	super.OnLoseFocus();
 }
 
 simulated function bool OnUnrealCommand(int cmd, int arg)

@@ -22,7 +22,7 @@ function StartDelayedInit()
 {
 	InitListItem(, true);
 	Update();
-	SetPosition(1150, 0);
+	SetPosition(1150, 15);
 }
 
 simulated function InitListItem(optional StateObjectReference _SquadRef, optional bool IgnoreSquadRef = false, optional UISquadMenu _OwningMenu)
@@ -52,17 +52,20 @@ simulated function InitListItem(optional StateObjectReference _SquadRef, optiona
 		SetWidth(300);
 	}
 
+	// KDM : Background button.
 	ButtonBG = Spawn(class'UIButton', self);
 	ButtonBG.bIsNavigable = false;
 	ButtonBG.InitButton(, , , eUIButtonStyle_NONE);
 	ButtonBG.SetSize(Width, Height);
 
+	// KDM : Squad icon.
 	SquadImage = Spawn(class'UIImage', self);
 	SquadImage.InitImage();
 	ImageSize = Height - (BorderPadding * 2);
 	SquadImage.SetSize(ImageSize, ImageSize);
 	SquadImage.SetPosition(BorderPadding, BorderPadding);
 
+	// KDM : Squad name.
 	SquadNameText = Spawn(class'UIScrollingText', self);
 	TextX = BorderPadding + ImageSize + BorderPadding;
 	TextWidth = Width - (TextX + BorderPadding);
