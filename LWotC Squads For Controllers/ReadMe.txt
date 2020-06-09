@@ -6,7 +6,7 @@ FILE : UIPersonnel_SquadBarracks
 FUNCTION : OnSquadIconClicked()
 DESCRIPTION : BelowScreen is set to a screen of type UIPersonnel_SquadBarracks.
 SOLUTION : UIPersonnel_SquadBarracks_ForControllers.EditSquadIcon sets BelowScreen to itself.
-STATUS : SOLVED IN NEW CLASS UIPersonnel_SquadBarracks_ForControllers.
+STATUS : SOLVED IN NEW CLASS "UIPersonnel_SquadBarracks_ForControllers".
 
 // ======================= 2 =========================
 FILE : UIScreenListener_LivingQuarters
@@ -16,33 +16,34 @@ STATUS : SOLVED SINCE CLASS IS DEPRECATED.
 // ======================= 3 =========================
 FILE : UIScreenListener_LWOfficerPack
 FUNCTION : CheckOfficerMissionStatus()
-DESCRIPTION : The event hook, OverrideGetPersonnelStatusSeparate, triggers a call to CheckOfficerMissionStatus(); however, the 
-event hook is never triggered.
-STATUS : SOLVED SINCE EVENT NEVER TRIGGERED.
+DESCRIPTION : The event OverrideGetPersonnelStatusSeparate calls CheckOfficerMissionStatus(); however, this particular
+event is never triggered.
+STATUS : EVENT IS NEVER TRIGGERED - MIGHT WANT TO UPDATE IT ANYWAYS.
 
 // ======================= 4 =========================
 FILE : UIScreenListener_SquadSelect_LW
 FUNCTION : OnInit()
 DESCRIPTION : When in a UISquadSelect screen, sets bInSquadEdit to the value of `SCREENSTACK.IsInStack(class'UIPersonnel_SquadBarracks').
 This determines what type of information will and will not be displayed on the UISquadSelect screen.
-SOLUTION : 
-	1.] Within LWotC code, return immediately if a controller is active. Then add a screen listener in this mod which does
-	basically the same thing.
-	2.] Create a new LWotC function, IsNamedClassInStack(name), making use of Object's "final function bool IsA(name ClassName)".
-	If the controller is not active, perform the normal code; if the controller is active, do a search using my new code.
+SOLUTION :
+- 1.] Create a new LWotC function, IsNamedClassInStack(name), making use of Object's "final function bool IsA(name ClassName)".
+If the controller is not active, perform the normal code; if the controller is active, do a search using my new code.
+I might be able to make use of X2EventListener_Soldiers.GetScreenOrChild(name ScreenType).
+- 2.] Within LWotC code, return immediately if a controller is active. Then add a screen listener in this mod which does
+basically the same thing.
 STATUS : TO DO
 
 // ======================= 5 =========================
 FILE : UIScreenListener_SquadSelect_LW
 FUNCTION : OnSquadManagerClicked()
-STATUS : SOLVED SINCE NEVER CALLED
+STATUS : FUNCTION NEVER CALLED - MIGHT WANT TO UPDATE IT ANYWAYS
 
 // ======================= 6 =========================
 FILE : UIScreenListener_SquadSelect_LW
 FUNCTION : OnSaveSquad()
 DESCRIPTION : If bInSquadEdit is true, the launch button's click delegate calls OnSaveSquad(). When it is clicked, the scren
 stack is popped until Barracks, which is a UIPersonnel_SquadBarracks.
-SOLUTION : Depends on #4. Will definitely have to base it on OnUnrealCommand, itstead of a button click though.
+SOLUTION : Depends on #4. Will definitely have to base it on OnUnrealCommand, instead of a button click though.
 Could probably put some code in UIScreenListener_RobojumperSquadSelect.OnRobojumperSquadSelectClick(); need to think about it.
 STATUS : TO DO
 
@@ -58,14 +59,15 @@ STATUS : TO DO
 // ======================= 8 =========================
 FILE : UISquadIconSelectionScreen
 DESCRIPTION : Makes use of BelowScreen, which is a screen of type UIPersonnel_SquadBarracks. Basically, same issue as #1.
-STATUS : SOLVED IN NEW CLASS UISquadIconSelectionScreen_ForControllers.
+STATUS : SOLVED IN NEW CLASS "UISquadIconSelectionScreen_ForControllers".
 
 // ======================= 9 =========================
 FILE : X2EventListener_Soldiers
 FUNCTION : OnOverridePersonnelStatus()
-DESCRIPTION : The event hook, OverridePersonnelStatus, triggers a call to OnOverridePersonnelStatus(); however, the 
-event hook is never triggered.
-STATUS : SOLVED SINCE EVENT NEVER TRIGGERED.
+DESCRIPTION : The event OverridePersonnelStatus calls OnOverridePersonnelStatus(); however, this particular
+event is never triggered.
+STATUS : EVENT IS NEVER TRIGGERED - MIGHT WANT TO UPDATE IT ANYWAYS.
+
 
 // ======================= 10 =========================
 FILE : XComGameState_LWSquadManager
@@ -77,17 +79,17 @@ STATUS : TO DO
 // ======================= 11 =========================
 FILE : XComGameState_LWSquadManager
 FUNCTION : SetDisabledSquadListItems()
-DESCRIPTION : 
-STATUS : 
+DESCRIPTION : The event OnSoldierListItemUpdateDisabled(), which is called in UIScreenListener_PersonnelSquadSelect.FireEvents(),
+calls SetDisabledSquadListItems(). Within this function, bInSquadEdit is set according to whether or not a screen of type
+UIPersonnel_SquadBarracks is on the stack. It looks like it disables list items when bInSquadEdit is true.
+STATUS : TO DO
 
 // ======================= 12 =========================
 FILE : XComGameState_LWSquadManager
 FUNCTION : ConfigureSquadOnEnterSquadSelect()
-DESCRIPTION : 
-STATUS : 
-
-
-
+DESCRIPTION : The event OnUpdateSquadSelectSoldiers calls ConfigureSquadOnEnterSquadSelect(); however, this particular
+event is never triggered.
+STATUS : EVENT IS NEVER TRIGGERED - MIGHT WANT TO UPDATE IT ANYWAYS.
 
 
 
@@ -96,8 +98,30 @@ STATUS :
 Go through the variables at the top of UIPersonnel_SquadBarracks and make sure they aren't referenced in other files; if they are, make sure the names sync up.
 // -----------------------------------------------------
 
+VARIABLE : bHideSelect
+DESCRIPTION : It is never set anywhere; therefore it is always false and can be ignored.
+STATUS : NO MODIFICATION NEEDED.
 
+VARIABLE : bSelectSquad
+DESCRIPTION : It is set to "true" in UISquadContainer.OnSquadManagerClicked() and UIScreenListener_SquadSelect_LW.OnSquadManagerClicked().
+It is accessed 3 times within UIPersonnel_SquadBarracks : InitScreen(), UpdateSquadHeader(), and OnEditOrSelectClicked(). 
+STATUS : LOOK INTO IT.
 
+VARIABLE : ExternalSelectedSquadRef
+DESCRIPTION : It is never set anywhere; therefore it is always false and can be ignored.
+STATUS : NO MODIFICATION NEEDED.
+
+VARIABLE : CachedSquad
+DESCRIPTION : It is dealt with in UIPersonnel_SquadBarracks : OnReceiveFocus(), and OnEditOrSelectClicked().
+STATUS : LOOK INTO IT.
+
+VARIABLE : bRestoreCachedSquad
+DESCRIPTION : It is dealt with in UIPersonnel_SquadBarracks : OnReceiveFocus(), and OnEditOrSelectClicked().
+STATUS : LOOK INTO IT.
+
+VARIABLE : CurrentSquadSelection
+DESCRIPTION : In addition to normal usage, it is dealt with in UIScreenListener_SquadSelect_LW.OnSaveSquad().
+STATUS : LOOK INTO IT.
 
 
 
