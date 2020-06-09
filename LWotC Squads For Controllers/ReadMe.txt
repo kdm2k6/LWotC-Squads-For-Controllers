@@ -126,5 +126,34 @@ STATUS : LOOK INTO IT.
 
 
 
+// -----------------------------------------------------
+WHAT HAS BEEN DONE
 
-X2EventListener_Soldiers.GetScreenOrChild(name ScreenType) is a good general idea as to how to check if a named screen is on the stack.
+- Helper functions added to UIScreenListener_LWOfficerPack since GetScreenOrChild already existed there, and I needed it before LW_Overhaul since the OfficerPack package is compiled 1st, and you can't dependsOn future packages.
+
+- #3 Done in LW code
+- #4/5/6 Done in LW code
+- #7 Done in LW code since a UIContainer is no longer created when the controller is active.
+- #9 Done in LW code
+- #10/11/12 Done in LW code
+
+bSelectSquad : 
+	- UISquadContainer not created anymore
+	- Value is set in UIScreenListener_UIPersonnel_SquadBarracks before UIPersonnel_SquadBarracks is popped; this should deal with it in terms of UIScreenListener_SquadSelect_LW.OnSquadManagerClicked.
+	- Checked in UIPersonnel_SquadBarracks
+	- DONE
+	
+CachedSquad
+	- Checked in UIPersonnel_SquadBarracks - DONE
+	
+bRestoreCachedSquad
+	- Checked in UIPersonnel_SquadBarracks - DONE
+
+CurrentSquadSelection
+	- UIScreenListener_SquadSelect_LW.OnSaveSquad is no longer called, because the save button is no longer created when a controller is active. DONE.
+	
+	
+ALSO TO DO : 
+- Probably get rid of all navhelp and buttons (except for B - close screen) while viewing squad - nothing sticks anyways since you can't
+save anything
+- If from squadbarracks - probably select squad menu item which is active - same with squad management

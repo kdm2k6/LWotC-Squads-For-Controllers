@@ -276,7 +276,7 @@ simulated function OnReceiveFocus()
 	super.OnReceiveFocus();
 
 	// KDM : We could be, potentially, coming back from the squad management menu where squads could have been added/deleted/modified.
-	// Therefore, it's important we update the data as well as the associated list.
+	// Therefore, it's important we update the data as well as the associated list via RefreshData().
 	RefreshData();
 	UpdateNavHelp();
 }
@@ -309,7 +309,9 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 	{
 		// KDM : B button closes the screen.
 		case class'UIUtilities_Input'.static.GetBackButtonInputCode() :
-			CloseScreen();
+			// KDM : OnSquadSelected guarantees the squad is updated upon closing the screen; this is important
+			// because squads might have been modified via the squad management screen.
+			OnSquadSelected(`LWSQUADMGR.LaunchingMissionSquad);
 			break;
 
 		// KDM : Select button opens the squad management screen.
