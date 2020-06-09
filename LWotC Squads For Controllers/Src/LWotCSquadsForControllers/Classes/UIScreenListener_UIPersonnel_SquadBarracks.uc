@@ -10,7 +10,8 @@ event OnInit(UIScreen Screen)
 	SquadBarracks = UIPersonnel_SquadBarracks(Screen);
 
 	SquadBarracksForControllers = HQPres.Spawn(class'UIPersonnel_SquadBarracks_ForControllers', HQPres);
-	SquadBarracksForControllers.bSelectSquad = SquadBarracks.bSelectSquad; // I THINK I NEED TO DO THIS IF I WILL USE bSELECTSQUAD
+	// KDM : I need to update the new squad barracks screen with SquadBarracks's bSelectSquad value before it is popped.
+	SquadBarracksForControllers.bSelectSquad = SquadBarracks.bSelectSquad; 
 	
 	HQPres.ScreenStack.Pop(SquadBarracks);
 	HQPres.ScreenStack.Push(SquadBarracksForControllers);

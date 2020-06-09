@@ -41,7 +41,7 @@ STATUS : FUNCTION NEVER CALLED - MIGHT WANT TO UPDATE IT ANYWAYS
 // ======================= 6 =========================
 FILE : UIScreenListener_SquadSelect_LW
 FUNCTION : OnSaveSquad()
-DESCRIPTION : If bInSquadEdit is true, the launch button's click delegate calls OnSaveSquad(). When it is clicked, the scren
+DESCRIPTION : If bInSquadEdit is true, the launch button's click delegate calls OnSaveSquad(). When it is clicked, the screen
 stack is popped until Barracks, which is a UIPersonnel_SquadBarracks.
 SOLUTION : Depends on #4. Will definitely have to base it on OnUnrealCommand, instead of a button click though.
 Could probably put some code in UIScreenListener_RobojumperSquadSelect.OnRobojumperSquadSelectClick(); need to think about it.
