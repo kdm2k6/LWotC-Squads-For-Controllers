@@ -7,7 +7,8 @@ class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadS
 // THINGS LIKE : `SCREENSTACK.IsInStack(class'UIPersonnel_SquadBarracks'); WILL CREATE PROBLEMS
 
 
-// KDM : NOT SURE IF I'M USING THESE YET
+// KDM : LW2 variables.
+var bool bSelectSquad;
 var array<StateObjectReference> CachedSquad;
 var bool bRestoreCachedSquad;
 
@@ -24,7 +25,6 @@ var bool DisplayingAvailableSoldiers;
 
 var int CurrentSquadIndex;
 
-var bool bSelectSquad; // KDM UNUSED RIGHT NOW
 var int PanelW, PanelH;
 
 var int BorderPadding; 

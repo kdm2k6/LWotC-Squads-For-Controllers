@@ -71,7 +71,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	DividerLine.LibID = class'UIUtilities_Controls'.const.MC_GenericPixel;
 	DividerLine.InitPanel();
 	DividerLine.SetPosition(BorderPadding, NextY);
-	DividerLine.SetWidth(PanelW - BorderPadding * 2);
+	DividerLine.SetWidth(PanelW - (BorderPadding * 2));
 	DividerLine.SetAlpha(30);
 
 	NextY += 10;
@@ -81,7 +81,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	List.bIsNavigable = true;
 	List.bStickyHighlight = false;
 	List.ItemPadding = 6;
-	List.InitList(, BorderPadding, NextY, PanelW - BorderPadding * 2, PanelH - NextY - BorderPadding);
+	List.InitList(, BorderPadding, NextY, PanelW - (BorderPadding * 2) - 20, PanelH - NextY - BorderPadding);
 	
 	RefreshData();
 	
@@ -253,8 +253,6 @@ simulated function OpenSquadManagement()
 	SquadManagementScreen = HQPres.Spawn(class'UIPersonnel_SquadBarracks_ForControllers', HQPres);
 	SquadManagementScreen.bSelectSquad = true;
 	HQPres.ScreenStack.Push(SquadManagementScreen);
-
-	CloseScreen();
 }
 
 simulated function bool OnUnrealCommand(int cmd, int arg)
@@ -303,7 +301,7 @@ defaultproperties
 	BorderPadding = 10;
 
 	PanelW = 400;
-	PanelH = 300;
+	PanelH = 400;
 }
 
 

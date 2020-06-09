@@ -22,7 +22,7 @@ function StartDelayedInit()
 {
 	InitListItem(, true);
 	Update();
-	SetPosition(1150, 50); // KDM : TEMP LOCATION UNTIL NORMAL ONE IS REMOVED
+	SetPosition(1150, 0);
 }
 
 simulated function InitListItem(optional StateObjectReference _SquadRef, optional bool IgnoreSquadRef = false, optional UISquadMenu _OwningMenu)
@@ -49,7 +49,7 @@ simulated function InitListItem(optional StateObjectReference _SquadRef, optiona
 	}
 	else
 	{
-		SetWidth(400);
+		SetWidth(300);
 	}
 
 	ButtonBG = Spawn(class'UIButton', self);
