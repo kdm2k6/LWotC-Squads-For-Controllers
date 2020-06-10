@@ -14,4 +14,25 @@ AvailableSoldiersStr="AVAILABLE SOLDIERS"
 NoSquadsStr="NONE AVAILABLE"
 DashesStr = "---------------"
 
+FocusUISquadStr ="FOCUS SQUAD UI"
+FocusUISoldiersStr="FOCUS SOLDIER UI"
+CreateSquadStr="CREATE SQUAD"
+DeleteSquadStr="DELETE SQUAD"
+PrevSquadStr="PREVIOUS SQUAD"
+NextSquadStr="NEXT SQUAD"
+ChangeSquadIconStr="CHANGE SQUAD ICON"
+RenameSquadStr="RENAME SQUAD"
+EditSquadBioStr="EDIT SQUAD BIO"
+ScrollSquadBioStr="SCROLL BIO"
+ViewSquadStr="VIEW SQUAD"
+
+ViewSquadSoldiersStr="VIEW SQUAD SOLDIERS"
+ViewAvailableSoldierStr="VIEW AVAILABLE SOLDIERS"
+
+;NavHelp.AddLeftHelp(m_strToggleSort, class'UIUtilities_Input'.static.GetGamepadIconPrefix() $ class'UIUtilities_Input'.const.ICON_X_SQUARE);
+;NavHelp.AddLeftHelp(m_strChangeColumn, class'UIUtilities_Input'.const.ICON_DPAD_HORIZONTAL); //bsg-crobinson (5.15.17): Add change column icon
+
+TransferToSquadStr="TRANSFER TO SQUAD"
+RemoveFromSquadStr="REMOVE FROM SQUAD"
+
 

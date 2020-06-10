@@ -1,11 +1,7 @@
-// Default flash background is - X/Y/WIDTH/HEIGHT : 480.0000 90.0000 1000.0000 895.9500
-
 class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadSettings);
 
 // KDM TO DO : IF NO SQUAD'S EXIST
 // NAVIGATION
-// THINGS LIKE : `SCREENSTACK.IsInStack(class'UIPersonnel_SquadBarracks'); WILL CREATE PROBLEMS
-
 
 // KDM : LW2 variables.
 var bool bSelectSquad;
@@ -16,6 +12,9 @@ var bool bRestoreCachedSquad;
 var config array<string> SquadImagePaths;
 
 var localized string TitleStr, NoSquadsStr, DashesStr, StatusStr, MissionsStr, BiographyStr, SquadSoldiersStr, AvailableSoldiersStr;
+var localized string FocusUISquadStr, FocusUISoldiersStr, CreateSquadStr, DeleteSquadStr, PrevSquadStr, NextSquadStr, ChangeSquadIconStr,
+	RenameSquadStr, EditSquadBioStr, ScrollSquadBioStr, ViewSquadStr, ViewSquadSoldiersStr, ViewAvailableSoldierStr, TransferToSquadStr,
+	RemoveFromSquadStr;
 
 // KDM : Determines whether the squad UI, located at the top, or the soldier UI, located at the bottom, is focused.
 var bool SoldierUIFocused;
@@ -204,6 +203,8 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 
 	SetUIFocus(false, true);
 	UpdateAll(true);
+
+	UpdateNavHelp();
 }
 
 simulated function CreateSortableHeader()
@@ -749,38 +750,6 @@ simulated function UpdateTabsForFocus()
 	}
 }
 
-// KDM : TO FINISH FUNCTION
-simulated function OnReceiveFocus()
-{
-	local XComGameState_HeadquartersXCom XComHQ;
-	local XComGameState NewGameState;
-
-	// LWS : If you were in 'view mode', restore the previously selected squad.
-	if (bRestoreCachedSquad)
-	{
-		NewGameState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Restore previous soldiers to XComHQ Squad");
-		XComHQ = XComGameState_HeadquartersXCom(NewGameState.CreateStateObject(class'XComGameState_HeadquartersXCom', `XCOMHQ.ObjectID));
-		XComHQ.Squad = CachedSquad;
-		NewGameState.AddStateObject(XComHQ);
-		`GAMERULES.SubmitGameState(NewGameState);
-
-		bRestoreCachedSquad = false;
-		CachedSquad.Length = 0;
-
-		// KDM : IS THE CURRENT INDEX AND UI STILL OK? NEED TO TEST.
-		// CurrentSquadIndex = ((CurrentSquadIndex - 1) < 0) ? (GetTotalSquads() - 1) : CurrentSquadIndex - 1;
-		// UpdateAll(true, true);
-	}
-
-	// KDM : When we receive focus from :
-	// 1] Squad deletion 2] Squad name change 3] Squad bio change 4] Squad icon change
-	// ReloadCurrentSquad is called in the appropriate callback functions
-
-	//UpdateNavHelp();
-
-	super(UIScreen).OnReceiveFocus();
-}
-
 function ViewCurrentSquad()
 {
 	local XComGameState NewGameState;
@@ -820,6 +789,84 @@ function ViewCurrentSquad()
 	}
 }
 
+// KDM : TO FINISH FUNCTION
+simulated function OnReceiveFocus()
+{
+	local XComGameState_HeadquartersXCom XComHQ;
+	local XComGameState NewGameState;
+
+	// LWS : If you were in 'view mode', restore the previously selected squad.
+	if (bRestoreCachedSquad)
+	{
+		NewGameState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Restore previous soldiers to XComHQ Squad");
+		XComHQ = XComGameState_HeadquartersXCom(NewGameState.CreateStateObject(class'XComGameState_HeadquartersXCom', `XCOMHQ.ObjectID));
+		XComHQ.Squad = CachedSquad;
+		NewGameState.AddStateObject(XComHQ);
+		`GAMERULES.SubmitGameState(NewGameState);
+
+		bRestoreCachedSquad = false;
+		CachedSquad.Length = 0;
+
+		// KDM : IS THE CURRENT INDEX AND UI STILL OK? NEED TO TEST.
+		// CurrentSquadIndex = ((CurrentSquadIndex - 1) < 0) ? (GetTotalSquads() - 1) : CurrentSquadIndex - 1;
+		// UpdateAll(true, true);
+	}
+
+	super(UIScreen).OnReceiveFocus();
+	UpdateNavHelp();
+}
+
+simulated function OnLoseFocus()
+{
+	`HQPRES.m_kAvengerHUD.NavHelp.ClearButtonHelp();
+
+	super.OnLoseFocus();
+}
+
+simulated function UpdateNavHelp()
+{
+	local string NavString;
+	local UINavigationHelp NavHelp;
+
+	NavHelp =`HQPRES.m_kAvengerHUD.NavHelp;
+	
+	NavHelp.ClearButtonHelp();
+	NavHelp.bIsVerticalHelp = true;
+	
+	if (!SoldierUIFocused)
+	{
+		// KDM : If the squad UI is focussed.
+		NavHelp.AddLeftHelp(FocusUISoldiersStr, class'UIUtilities_Input'.const.ICON_RSCLICK_R3);
+		NavHelp.AddLeftHelp(CreateSquadStr, class'UIUtilities_Input'.const.ICON_Y_TRIANGLE);
+		NavHelp.AddLeftHelp(DeleteSquadStr, class'UIUtilities_Input'.const.ICON_X_SQUARE);
+		NavHelp.AddLeftHelp(ChangeSquadIconStr, class'UIUtilities_Input'.const.ICON_LSCLICK_L3);
+		NavHelp.AddLeftHelp(RenameSquadStr, class'UIUtilities_Input'.const.ICON_LT_L2);
+		NavHelp.AddLeftHelp(EditSquadBioStr, class'UIUtilities_Input'.const.ICON_RT_R2);
+		NavHelp.AddLeftHelp(ScrollSquadBioStr, class'UIUtilities_Input'.const.ICON_DPAD_VERTICAL);
+
+		NavHelp.AddCenterHelp(PrevSquadStr, class'UIUtilities_Input'.const.ICON_LB_L1);
+		NavHelp.AddCenterHelp(NextSquadStr, class'UIUtilities_Input'.const.ICON_RB_R1);
+
+		NavHelp.AddRightHelp(ViewSquadStr, class'UIUtilities_Input'.const.ICON_BACK_SELECT);
+	}
+	else
+	{
+		// KDM : If the soldier UI is focussed.
+		NavHelp.AddLeftHelp(FocusUISquadStr, class'UIUtilities_Input'.const.ICON_RSCLICK_R3);
+
+		NavHelp.AddCenterHelp(ViewSquadSoldiersStr, class'UIUtilities_Input'.const.ICON_LB_L1);
+		NavHelp.AddCenterHelp(ViewAvailableSoldierStr, class'UIUtilities_Input'.const.ICON_RB_R1);
+		NavHelp.AddCenterHelp(m_strToggleSort, class'UIUtilities_Input'.const.ICON_X_SQUARE);
+		NavHelp.AddCenterHelp(m_strChangeColumn, class'UIUtilities_Input'.const.ICON_DPAD_HORIZONTAL);
+
+		NavString = (DisplayingAvailableSoldiers) ? TransferToSquadStr : RemoveFromSquadStr;
+		NavHelp.AddLeftHelp(NavString, class'UIUtilities_Input'.const.ICON_A_X);
+		
+	}
+
+	NavHelp.Show();
+}
+
 simulated function bool OnUnrealCommand(int cmd, int arg)
 {
 	local bool bHandled;
@@ -840,6 +887,7 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 	{
 		ToggleUIFocus();
 		UpdateListUI(true);
+		UpdateNavHelp();
 	}
 	else if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_B)
 	{
