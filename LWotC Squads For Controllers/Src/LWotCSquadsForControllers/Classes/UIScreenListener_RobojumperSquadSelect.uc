@@ -91,7 +91,6 @@ event OnRemoved(UIScreen Screen)
 	HQPres.ScreenStack.UnsubscribeFromOnInputForScreen(Screen, OnRobojumperSquadSelectClick);
 }
 
-
 defaultproperties
 {
 	ScreenClass = class'robojumper_UISquadSelect';

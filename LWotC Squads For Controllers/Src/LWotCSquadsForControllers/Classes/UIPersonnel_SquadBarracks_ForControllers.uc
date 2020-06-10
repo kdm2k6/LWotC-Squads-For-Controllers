@@ -194,7 +194,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	YLoc = MainPanel.Y + SquadSoldiersTab.Y + 75;
 	m_kList = Spawn(class'UIList', self);
 	m_kList.bStickyHighlight = false;
-	m_kList.InitList('listAnchor', XLoc, YLoc, m_iMaskWidth, m_iMaskHeight);
+	m_kList.InitList('listAnchor', XLoc, YLoc, m_iMaskWidth - 20, m_iMaskHeight);
 	m_kList.MoveToHighestDepth();
 
 	// KDM : If at least 1 squad exists, select the 1st one by setting CurrentSquadIndex to 0.
@@ -666,6 +666,7 @@ function EditSquadIcon()
 	local UISquadIconSelectionScreen_ForControllers IconSelectionScreen;
 	local XComPresentationLayerBase HQPres;
 	
+	if (!CurrentSquadIsValid()) return;
 	if (CurrentSquadIcon == none) return;
 
 	HQPres = `HQPRES;
@@ -832,45 +833,98 @@ simulated function UpdateNavHelp()
 	
 	NavHelp.ClearButtonHelp();
 	NavHelp.bIsVerticalHelp = true;
-	
-	if (!SoldierUIFocused)
+
+	if (!CurrentSquadIsValid())
 	{
-		// KDM : If the squad UI is focussed.
-		NavHelp.AddLeftHelp(FocusUISoldiersStr, class'UIUtilities_Input'.const.ICON_RSCLICK_R3);
-		NavHelp.AddLeftHelp(CreateSquadStr, class'UIUtilities_Input'.const.ICON_Y_TRIANGLE);
-		NavHelp.AddLeftHelp(DeleteSquadStr, class'UIUtilities_Input'.const.ICON_X_SQUARE);
-		NavHelp.AddLeftHelp(ChangeSquadIconStr, class'UIUtilities_Input'.const.ICON_LSCLICK_L3);
-		NavHelp.AddLeftHelp(RenameSquadStr, class'UIUtilities_Input'.const.ICON_LT_L2);
-		NavHelp.AddLeftHelp(EditSquadBioStr, class'UIUtilities_Input'.const.ICON_RT_R2);
-		NavHelp.AddLeftHelp(ScrollSquadBioStr, class'UIUtilities_Input'.const.ICON_DPAD_VERTICAL);
-
-		NavHelp.AddCenterHelp(PrevSquadStr, class'UIUtilities_Input'.const.ICON_LB_L1);
-		NavHelp.AddCenterHelp(NextSquadStr, class'UIUtilities_Input'.const.ICON_RB_R1);
-
-		NavHelp.AddRightHelp(ViewSquadStr, class'UIUtilities_Input'.const.ICON_BACK_SELECT);
+		// KDM : If the squad is not valid, you should not be able to focus the soldier UI.
+		if (!SoldierUIFocused)
+		{
+			NavHelp.AddBackButton();
+			NavHelp.AddLeftHelp(CreateSquadStr, class'UIUtilities_Input'.const.ICON_Y_TRIANGLE);
+		}
 	}
 	else
 	{
-		// KDM : If the soldier UI is focussed.
-		NavHelp.AddLeftHelp(FocusUISquadStr, class'UIUtilities_Input'.const.ICON_RSCLICK_R3);
+		NavHelp.AddBackButton();
 
-		NavHelp.AddCenterHelp(ViewSquadSoldiersStr, class'UIUtilities_Input'.const.ICON_LB_L1);
-		NavHelp.AddCenterHelp(ViewAvailableSoldierStr, class'UIUtilities_Input'.const.ICON_RB_R1);
-		NavHelp.AddCenterHelp(m_strToggleSort, class'UIUtilities_Input'.const.ICON_X_SQUARE);
-		NavHelp.AddCenterHelp(m_strChangeColumn, class'UIUtilities_Input'.const.ICON_DPAD_HORIZONTAL);
+		if (!SoldierUIFocused)
+		{
+			// KDM : If the squad UI is focussed.
+			NavHelp.AddLeftHelp(ScrollSquadBioStr, class'UIUtilities_Input'.const.ICON_RSTICK);
+			NavHelp.AddLeftHelp(ChangeSquadIconStr, class'UIUtilities_Input'.const.ICON_LSCLICK_L3);
+			NavHelp.AddLeftHelp(EditSquadBioStr, class'UIUtilities_Input'.const.ICON_RT_R2);
+			NavHelp.AddLeftHelp(RenameSquadStr, class'UIUtilities_Input'.const.ICON_LT_L2);
+			NavHelp.AddLeftHelp(DeleteSquadStr, class'UIUtilities_Input'.const.ICON_X_SQUARE);
+			NavHelp.AddLeftHelp(CreateSquadStr, class'UIUtilities_Input'.const.ICON_Y_TRIANGLE);
+			NavHelp.AddLeftHelp(FocusUISoldiersStr, class'UIUtilities_Input'.const.ICON_RSCLICK_R3);
 
-		NavString = (DisplayingAvailableSoldiers) ? TransferToSquadStr : RemoveFromSquadStr;
-		NavHelp.AddLeftHelp(NavString, class'UIUtilities_Input'.const.ICON_A_X);
-		
-	}
+			NavHelp.AddCenterHelp(PrevSquadStr, class'UIUtilities_Input'.const.ICON_LB_L1);
+			NavHelp.AddCenterHelp(NextSquadStr, class'UIUtilities_Input'.const.ICON_RB_R1);
+
+			// KDM : If we are coming through the squad select screen, or if the squad is on a mission, don't allow
+			// squad viewing; this is mainly LW2 logic which I don't want to mess with.
+			if (!(bSelectSquad || GetCurrentSquad().bOnMission))
+			{
+				// KDM : For some reason, bIsVerticalHelp has to be false for the right container, else the help falls off the side of the screen.
+				NavHelp.bIsVerticalHelp = false;
+				NavHelp.AddRightHelp(ViewSquadStr, class'UIUtilities_Input'.const.ICON_BACK_SELECT);
+			}
+		}
+		else
+		{
+			// KDM : If the soldier UI is focussed.
+			NavString = (DisplayingAvailableSoldiers) ? TransferToSquadStr : RemoveFromSquadStr;
+			NavHelp.AddLeftHelp(NavString, class'UIUtilities_Input'.const.ICON_A_X);
+			NavHelp.AddLeftHelp(FocusUISquadStr, class'UIUtilities_Input'.const.ICON_RSCLICK_R3);
+			
+			NavHelp.AddCenterHelp(ViewSquadSoldiersStr, class'UIUtilities_Input'.const.ICON_LB_L1);
+			NavHelp.AddCenterHelp(ViewAvailableSoldierStr, class'UIUtilities_Input'.const.ICON_RB_R1);
+			NavHelp.AddCenterHelp(m_strToggleSort, class'UIUtilities_Input'.const.ICON_X_SQUARE);
+			NavHelp.AddCenterHelp(m_strChangeColumn, class'UIUtilities_Input'.const.ICON_DPAD_HORIZONTAL);
+			
+			if (DetailsManagerExists())
+			{
+				NavHelp.bIsVerticalHelp = false;
+				NavHelp.AddRightHelp(CAPS(class'MoreDetailsManager'.default.m_strToggleDetails), class'UIUtilities_Input'.const.ICON_RT_R2);
+			}
+		}
+	}	
 
 	NavHelp.Show();
+}
+
+simulated function bool DetailsManagerExists()
+{
+	return (GetDetailsManager() != none);
+}
+
+simulated function ToggleListDetails()
+{
+	local MoreDetailsManager DetailsManager;
+
+	DetailsManager = GetDetailsManager();
+	if (DetailsManager != none)
+	{
+		DetailsManager.OnToggleDetails();
+	}
+}
+
+simulated function MoreDetailsManager GetDetailsManager()
+{
+	// KDM : The details manager is accessed through list items of type UIPersonnel_SoldierListItemDetailed; therefore, 
+	// if no list items exist, we have to assume the details manager hasn't been set up.
+	if (m_kList.ItemCount > 0)
+	{
+		return class'MoreDetailsManager'.static.GetParentDM(m_kList.GetItem(0));
+	}
+
+	return none;
 }
 
 simulated function bool OnUnrealCommand(int cmd, int arg)
 {
 	local bool bHandled;
-
+	
 	if (!CheckInputIsReleaseOrDirectionRepeat(cmd, arg))
 	{
 		return false;
@@ -885,9 +939,12 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 	// KDM : Right stick click toggles focus between the squad UI, on top, and the soldier UI, on the bottom.
 	if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_R3)
 	{
-		ToggleUIFocus();
-		UpdateListUI(true);
-		UpdateNavHelp();
+		if (CurrentSquadIsValid())
+		{
+			ToggleUIFocus();
+			UpdateListUI(true);
+			UpdateNavHelp();
+		}
 	}
 	else if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_B)
 	{
@@ -934,12 +991,18 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 
 			// KDM : Right stick up tells the squad biography to scroll up, if it is larger than its container size.
 			case class'UIUtilities_Input'.const.FXS_VIRTUAL_RSTICK_UP:
-				CurrentSquadBio.OnChildMouseEvent(none, class'UIUtilities_Input'.const.FXS_MOUSE_SCROLL_DOWN);
+				if (CurrentSquadIsValid())
+				{
+					CurrentSquadBio.OnChildMouseEvent(none, class'UIUtilities_Input'.const.FXS_MOUSE_SCROLL_DOWN);
+				}
 				break;
 
 			// KDM : Right stick down tells the squad biography to scroll down, if it is larger than its container size.
 			case class'UIUtilities_Input'.const.FXS_VIRTUAL_RSTICK_DOWN:
-				CurrentSquadBio.OnChildMouseEvent(none, class'UIUtilities_Input'.const.FXS_MOUSE_SCROLL_UP);
+				if (CurrentSquadIsValid())
+				{
+					CurrentSquadBio.OnChildMouseEvent(none, class'UIUtilities_Input'.const.FXS_MOUSE_SCROLL_UP);
+				}
 				break;
 
 			// KDM : Select button views the squad.
@@ -960,6 +1023,7 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 		{
 			ToggleTabFocus();
 			UpdateListUI(false);
+			UpdateNavHelp();
 		}
 		// KDM : DPad left changes list column selection; this is UIPersonnel code.
 		else if (cmd == class'UIUtilities_Input'.const.FXS_DPAD_LEFT)
@@ -997,6 +1061,11 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 		else if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_A)
 		{
 			OnSoldierSelected(m_kList, m_kList.selectedIndex);
+		}
+		// KDM : Right trigger toggles the soldier list details.
+		else if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_RTRIGGER)
+		{
+			ToggleListDetails();
 		}
 		else
 		{

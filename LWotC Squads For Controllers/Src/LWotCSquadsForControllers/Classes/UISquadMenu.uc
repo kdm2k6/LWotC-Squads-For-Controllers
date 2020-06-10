@@ -251,7 +251,7 @@ simulated function UpdateNavHelp()
 	NavHelp.bIsVerticalHelp = true;
 	NavHelp.AddBackButton();
 	NavHelp.AddSelectNavHelp();
-	NavHelp.AddLeftHelp(SquadManagementStr, class'UIUtilities_Input'.const.ICON_BACK_SELECT);
+	NavHelp.AddLeftHelp(SquadManagementStr, class'UIUtilities_Input'.const.ICON_LSCLICK_L3);
 	NavHelp.Show();
 }
 
@@ -315,7 +315,7 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 			break;
 
 		// KDM : Select button opens the squad management screen.
-		case class'UIUtilities_Input'.const.FXS_BUTTON_SELECT:
+		case class'UIUtilities_Input'.const.FXS_BUTTON_L3:
 			OpenSquadManagement();
 			break;
 		
