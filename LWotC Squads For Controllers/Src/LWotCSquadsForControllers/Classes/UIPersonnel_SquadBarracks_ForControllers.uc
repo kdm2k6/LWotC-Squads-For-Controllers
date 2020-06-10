@@ -1,5 +1,8 @@
 class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadSettings);
 
+// KDM NOTES :
+// Turn off autofill squads for RJ squad select or else empty LW squads will be filled out with individuals.
+
 // KDM TO DO : IF NO SQUAD'S EXIST
 // NAVIGATION
 
