@@ -3,8 +3,21 @@ class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadS
 // KDM NOTES :
 // Turn off autofill squads for RJ squad select or else empty LW squads will be filled out with individuals.
 
-// KDM TO DO : IF NO SQUAD'S EXIST
-// NAVIGATION
+// KDM GOOD IDEAS I THINK :
+// Try to keep squads synced up between Squad Select --> Squad Menu --> SquadBarracks
+// bSelectSquad is true if you are coming through Squad Select - so must be false when coming through simple squad management menu
+// GOING TO PROBABLY HAVE TO DEAL WITH SETSQUAD STUFF BELOW ALSO - when you add or delete squads
+//
+// KDM TO DO : Select appropriate squad on init as well as on receive focus
+// init coming from Squad Menu assuming bSelectSquad I think
+
+
+// KDM TO DO : IF NO SQUAD'S EXIST - NEED to do testing for various things since I haven't checked it out at all.
+// How does it handle it?
+
+// Update LWotc regarding detailed soldier list - getting rid of nav help button if controller is active while
+// UIPersonnel_SquadBarracks_ForControllers is on stack, I think - think about it
+
 
 // KDM : LW2 variables.
 var bool bSelectSquad;
@@ -542,6 +555,11 @@ simulated function CreateSquad()
 	// KDM : Since we added 1 squad above, TotalSquads is now the 'index' of the last squad in the array; the squad we just added.
 	CurrentSquadIndex = TotalSquads;
 	UpdateAll(true);
+
+	// KDM : Adding or deleting a squad messes up the underlying squad data; therefore, make the newly created squad
+	// the selected squad. If you want to see this problem in action : start a mission, note the squad, exit out of the
+	// mission, add a squad, start the same mission and see a random squad.
+	class'UISquadMenu'.static.SetSquad(`LWSQUADMGR.Squads[CurrentSquadIndex]);
 }
 
 simulated function DeleteSelectedSquad()
@@ -594,6 +612,10 @@ simulated function OnDeleteSelectedSquadCallback(Name eAction)
 		}
 		
 		UpdateAll(true);
+
+		// KDM : Adding or deleting a squad messes up the underlying squad data; therefore, use CurrentSquadIndex for our 
+		// selected squad.
+		class'UISquadMenu'.static.SetSquad(`LWSQUADMGR.Squads[CurrentSquadIndex]);
 	}
 }
 

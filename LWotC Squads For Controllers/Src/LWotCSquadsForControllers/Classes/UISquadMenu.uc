@@ -1,5 +1,9 @@
 class UISquadMenu extends UIScreen;
 
+// KDM TO DO : Select appropriate squad on init as well as on receive focus
+// init coming from squad select - receive focus coming from squad barracks I believe
+// I think onLosefocus deals with back to squad select, but check it out.
+
 var localized string SquadManagementStr, TitleStr, OpenSquadMenuStr;
 
 var int PanelH, PanelW;
@@ -189,7 +193,7 @@ simulated function OnSquadSelected(StateObjectReference SelectedSquadRef)
 }
 
 // KDM : This is LW2 code from UISquadContainer.
-function SetSquad(optional StateObjectReference NewSquadRef)
+static function SetSquad(optional StateObjectReference NewSquadRef)
 {
 	local StateObjectReference CurrentSquadRef;
 	local XComGameState UpdateState;
