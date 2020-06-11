@@ -79,3 +79,43 @@ static function SetSelectedIndexWithScroll(UIList TheList, int Index, optional b
 		TheList.Scrollbar.SetThumbAtPercent(float(Index) / float(TheList.ItemCount - 1));
 	}
 }
+
+// KDM : This is LW2 code from UISquadContainer.
+static function SetSquad(optional StateObjectReference NewSquadRef)
+{
+	local StateObjectReference CurrentSquadRef;
+	local XComGameState UpdateState;
+	local XComGameState_HeadquartersXCom XComHQ;
+	local XComGameState_LWPersistentSquad SquadState;
+	local XComGameState_LWSquadManager SquadManager, UpdatedSquadManager;
+	
+	XComHQ = `XCOMHQ;
+	SquadManager = `LWSQUADMGR;
+
+	if (NewSquadRef.ObjectID > 0)
+	{
+		CurrentSquadRef = NewSquadRef;
+	}
+	else
+	{
+		CurrentSquadRef = SquadManager.LaunchingMissionSquad;
+	}
+
+	if (CurrentSquadRef.ObjectID > 0)
+	{
+		SquadState = XComGameState_LWPersistentSquad(`XCOMHISTORY.GetGameStateForObjectID(CurrentSquadRef.ObjectID));
+	}
+	else
+	{
+		SquadState = SquadManager.AddSquad(, XComHQ.MissionRef);
+	}
+
+	UpdateState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Update Launching Mission Squad");
+	UpdatedSquadManager = XComGameState_LWSquadManager(UpdateState.CreateStateObject(SquadManager.Class, SquadManager.ObjectID));
+	UpdateState.AddStateObject(UpdatedSquadManager);
+	UpdatedSquadManager.LaunchingMissionSquad = SquadState.GetReference();
+	UpdateState.AddStateObject(XComHQ);
+	`GAMERULES.SubmitGameState(UpdateState);
+
+	SquadState.SetSquadCrew(, false , false);
+}

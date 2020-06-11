@@ -3,13 +3,6 @@ class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadS
 // KDM NOTES :
 // Turn off autofill squads for RJ squad select or else empty LW squads will be filled out with individuals.
 
-// KDM GOOD IDEAS I THINK :
-// Try to keep squads synced up between Squad Select --> Squad Menu --> SquadBarracks
-// bSelectSquad is true if you are coming through Squad Select - so must be false when coming through simple squad management menu
-// GOING TO PROBABLY HAVE TO DEAL WITH SETSQUAD STUFF BELOW ALSO - when you add or delete squads
-//
-// KDM TO DO : Select appropriate squad on init as well as on receive focus
-// init coming from Squad Menu assuming bSelectSquad I think
 
 
 // KDM TO DO : IF NO SQUAD'S EXIST - NEED to do testing for various things since I haven't checked it out at all.
@@ -564,7 +557,7 @@ simulated function PrevSquad()
 simulated function CreateSquad()
 {
 	local int TotalSquads;
-
+	
 	TotalSquads = GetTotalSquads();
 	
 	// KDM : Don't store `LWSQUADMGR in a variable and access it after calling CreateEmptySquad(); the reference has become stale !
@@ -574,10 +567,31 @@ simulated function CreateSquad()
 	CurrentSquadIndex = TotalSquads;
 	UpdateAll(true);
 
-	// KDM : Adding or deleting a squad messes up the underlying squad data; therefore, make the newly created squad
-	// the selected squad. If you want to see this problem in action : start a mission, note the squad, exit out of the
-	// mission, add a squad, start the same mission and see a random squad.
-	//class'UISquadMenu'.static.SetSquad(`LWSQUADMGR.Squads[CurrentSquadIndex]);
+	// KDM : A squad has been added so LW's underlying squad data is messed up and needs to be refreshed.
+	// A simple, yet reasonable, solution is to select the 1st available squad, if one exists.
+	SetLWSelectedSquadRef();
+}
+
+simulated function SetLWSelectedSquadRef(optional StateObjectReference SquadRef)
+{
+	// KDM : We have been given a valid squad, so select it.
+	if (SquadRef.ObjectID > 0)
+	{
+		class'Utilities'.static.SetSquad(SquadRef);
+	}
+	else
+	{
+		// KDM : Squads exist, so just select the 1st one.
+		if (`LWSQUADMGR.Squads.Length > 0)
+		{
+			class'Utilities'.static.SetSquad(`LWSQUADMGR.GetSquad(0).GetReference());
+		}
+		// KDM : No squads exist, so send in an empty reference.
+		else
+		{
+			class'Utilities'.static.SetSquad();
+		}
+	}
 }
 
 simulated function DeleteSelectedSquad()
@@ -631,9 +645,9 @@ simulated function OnDeleteSelectedSquadCallback(Name eAction)
 		
 		UpdateAll(true);
 
-		// KDM : Adding or deleting a squad messes up the underlying squad data; therefore, use CurrentSquadIndex for our 
-		// selected squad.
-		// class'UISquadMenu'.static.SetSquad(`LWSQUADMGR.Squads[CurrentSquadIndex]);
+		// KDM : A squad has been deleted so LW's underlying squad data is messed up and needs to be refreshed.
+		// A simple, yet reasonable, solution is to select the 1st available squad, if one exists.
+		SetLWSelectedSquadRef();
 	}
 }
 

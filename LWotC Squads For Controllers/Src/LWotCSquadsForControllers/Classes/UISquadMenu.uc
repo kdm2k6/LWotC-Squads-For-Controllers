@@ -196,7 +196,7 @@ simulated function OnSquadSelected(StateObjectReference SelectedSquadRef)
 	
 	SquadSelectScreen = robojumper_UISquadSelect(`HQPRES.ScreenStack.GetScreen(class'robojumper_UISquadSelect'));
 
-	SetSquad(SelectedSquadRef);
+	class'Utilities'.static.SetSquad(SelectedSquadRef);
 
 	CurrentSquadIcon = UISquadMenu_ListItem(SquadSelectScreen.GetChildByName('CurrentSquadIconForController', false));
 	if (CurrentSquadIcon != none)
@@ -207,46 +207,6 @@ simulated function OnSquadSelected(StateObjectReference SelectedSquadRef)
 
 	// KDM : Once a squad has been selected, just close the menu.
 	CloseScreen();
-}
-
-// KDM : This is LW2 code from UISquadContainer.
-static function SetSquad(optional StateObjectReference NewSquadRef)
-{
-	local StateObjectReference CurrentSquadRef;
-	local XComGameState UpdateState;
-	local XComGameState_HeadquartersXCom XComHQ;
-	local XComGameState_LWPersistentSquad SquadState;
-	local XComGameState_LWSquadManager SquadManager, UpdatedSquadManager;
-	
-	XComHQ = `XCOMHQ;
-	SquadManager = `LWSQUADMGR;
-
-	if (NewSquadRef.ObjectID > 0)
-	{
-		CurrentSquadRef = NewSquadRef;
-	}
-	else
-	{
-		CurrentSquadRef = SquadManager.LaunchingMissionSquad;
-	}
-
-	if (CurrentSquadRef.ObjectID > 0)
-	{
-		SquadState = XComGameState_LWPersistentSquad(`XCOMHISTORY.GetGameStateForObjectID(CurrentSquadRef.ObjectID));
-	}
-	else
-	{
-		SquadState = SquadManager.AddSquad(, XComHQ.MissionRef);
-	}
-
-	UpdateState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Update Launching Mission Squad");
-	UpdatedSquadManager = XComGameState_LWSquadManager(UpdateState.CreateStateObject(SquadManager.Class, SquadManager.ObjectID));
-	UpdateState.AddStateObject(UpdatedSquadManager);
-	UpdatedSquadManager.LaunchingMissionSquad = SquadState.GetReference();
-	UpdateState.AddStateObject(XComHQ);
-	`GAMERULES.SubmitGameState(UpdateState);
-
-	SquadState.SetSquadCrew(, false , false);
 }
 
 simulated function OpenSquadManagement()
