@@ -5,9 +5,10 @@ class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadS
 
 // KDM TO DO :
 // 1. IF NO SQUAD'S EXIST - NEED to do testing for various things since I haven't checked it out at all.
-// How does it handle it?
 // 2. Update LWotc regarding detailed soldier list - getting rid of nav help button if controller is active while
 // UIPersonnel_SquadBarracks_ForControllers is on stack, I think - think about it
+// 3. Only thing I haven't really tested is View Squad - probably actually test, but then jsut make it a config variable
+// set to false by default - since save functionality doesn't even work.
 
 
 // KDM : LW2 variables.
@@ -269,7 +270,7 @@ simulated function UpdateSquadUI()
 	NoSquads = !SquadsExist();
 	CurrentSquadState = GetCurrentSquad();
 
-	// KDM : If no squads exist set up the UI a little differently, then exit.
+	// KDM : If no squads exist, empty the UI then exit.
 	if (NoSquads)
 	{
 		SquadHeader.SetText(NoSquadsStr);
@@ -297,7 +298,7 @@ simulated function UpdateSquadUI()
 	// Unfortunately, SetText() doesn't call realize(), so we have to do it ourself.
 	SquadHeader.MC.FunctionVoid("realize");
 
-	// KDM : Set the squad icon.
+	// KDM : Set the squad icon; it also needs to be shown since, if no squads exist, it is hidden.
 	CurrentSquadIcon.LoadImage(CurrentSquadState.GetSquadImagePath());
 	CurrentSquadIcon.Show();
 	
@@ -318,11 +319,11 @@ simulated function UpdateSquadUI()
 	SquadMissions = class'UIUtilities_Text'.static.GetColoredText(SquadMissions, eUIState_Normal, 24, "RIGHT"); 
 	CurrentSquadMissions.SetHTMLText(SquadMissions);
 	
-	// KDM : Update the soldier icon list.
+	// KDM : Update the soldier icon list; it also needs to be shown since, if no squads exist, it is hidden.
 	UpdateSoldierClassIcons(CurrentSquadState);
 	SoldierIconList.Show();
 
-	// KDM : Set the squad biography; this includes the number of missions on the 1st line.
+	// KDM : Set the squad's biography.
 	ParamTag = XGParamTag(`XEXPANDCONTEXT.FindTag("XGParam"));
 	ParamTag.StrValue0 = CurrentSquadState.sSquadBiography;
 	SquadBio = `XEXPAND.ExpandString(BiographyStr);
@@ -349,7 +350,7 @@ simulated function ResetTabFocus()
 
 simulated function ResetSortType()
 {
-	// KDM : By default, sort the list in rank descending order.
+	// KDM : By default, sort the list in rank-descending order.
 	m_iSortTypeOrderIndex = 0;
 	m_eSortType = ePersonnelSoldierSortType_Rank;
 	m_bFlipSort = false;
@@ -412,7 +413,10 @@ simulated function UpdateListSelection()
 {
 	if (SoldierUIFocused)
 	{
-		if (m_kList.ItemCount > 0) m_kList.SetSelectedIndex(0, true);
+		if (m_kList.ItemCount > 0) 
+		{
+			m_kList.SetSelectedIndex(0, true);
+		}
 	}
 	else
 	{
@@ -434,8 +438,7 @@ simulated function int GetClassIconAlphaStatus(XComGameState_Unit SoldierState, 
 	switch (SoldierState.GetStatus())
 	{
 		case eStatus_Active:
-			if (CurrentSquadState.bOnMission && CurrentSquadState.IsSoldierTemporary(SoldierState.GetReference())) return 50;
-			else return 100;
+			return (CurrentSquadState.bOnMission && CurrentSquadState.IsSoldierTemporary(SoldierState.GetReference())) ? 50 : 100;
 
 		case eStatus_OnMission:
 			return (`LWOUTPOSTMGR.IsUnitAHavenLiaison(SoldierState.GetReference())) ? 50 : 100;
@@ -460,7 +463,7 @@ simulated function UpdateSoldierClassIcons(XComGameState_LWPersistentSquad Curre
 	
 	SoldierStates = CurrentSquadState.GetSoldiers();
 	
-	// LWS : Add permanent soldiers icons
+	// LWS : Add permanent soldier icons.
 	for (i = 0; i < SoldierStates.Length; i++)
 	{
 		SoldierState = SoldierStates[i];
@@ -483,7 +486,7 @@ simulated function UpdateSoldierClassIcons(XComGameState_LWPersistentSquad Curre
 	StartIndex = i;
 	SoldierStates = CurrentSquadState.GetTempSoldiers();
 	
-	// LWS : Add temporary soldiers icons
+	// LWS : Add temporary soldier icons.
 	for (i = StartIndex; i < StartIndex + SoldierStates.Length; i++)
 	{
 		SoldierState = SoldierStates[i - StartIndex];
@@ -505,7 +508,7 @@ simulated function UpdateSoldierClassIcons(XComGameState_LWPersistentSquad Curre
 
 	StartIndex = i;
 
-	// LWS : Hide additional icons
+	// LWS : Hide additional icons.
 	if (SoldierIconList.GetItemCount() > StartIndex)								
 	{
 		for (i = StartIndex; i < SoldierIconList.GetItemCount(); i++)
@@ -516,12 +519,11 @@ simulated function UpdateSoldierClassIcons(XComGameState_LWPersistentSquad Curre
 	}
 }
 
-// KDM : LW2 function modified.
 simulated function XComGameState_LWPersistentSquad GetCurrentSquad()
 {
 	local StateObjectReference CurrentSquadRef;
 	
-	if (CurrentSquadIndex < 0)
+	if (CurrentSquadIndex < 0) 
 	{
 		return none;
 	}
@@ -581,23 +583,15 @@ simulated function CreateSquad()
 
 simulated function SetLWSelectedSquadRef(optional StateObjectReference SquadRef)
 {
-	// KDM : We have been given a valid squad, so select it.
 	if (SquadRef.ObjectID > 0)
 	{
+		// KDM : We have been given a valid squad, so select it.
 		class'Utilities'.static.SetSquad(SquadRef);
 	}
-	else
+	else if (`LWSQUADMGR.Squads.Length > 0)
 	{
-		// KDM : Squads exist, so just select the 1st one.
-		if (`LWSQUADMGR.Squads.Length > 0)
-		{
-			class'Utilities'.static.SetSquad(`LWSQUADMGR.GetSquad(0).GetReference());
-		}
-		// KDM : No squads exist, so send in an empty reference.
-		else
-		{
-			class'Utilities'.static.SetSquad();
-		}
+		// KDM : We were not given a valid squad; however, squads exist, so just select the 1st one.
+		class'Utilities'.static.SetSquad(`LWSQUADMGR.GetSquad(0).GetReference());
 	}
 }
 
@@ -1153,7 +1147,7 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 		}
 	}
 
-	return bHandled; // KDM : I don't think I want UIScreen allowing things like jumping to the Geoscape || super(UIScreen).OnUnrealCommand(cmd, arg);
+	return bHandled; 
 }
 
 simulated function OnSoldierSelected(UIList SquadList, int SelectedIndex)
@@ -1277,7 +1271,3 @@ defaultproperties
 	SoldierUIFocused = false;
 	DisplayingAvailableSoldiers = false;
 }
-
-// Looks like UIPersonnel size is
-// m_iMaskWidth = 961;
-// m_iMaskHeight = 780;
