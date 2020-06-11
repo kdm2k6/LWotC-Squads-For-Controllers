@@ -1,9 +1,5 @@
 class UISquadMenu extends UIScreen;
 
-// KDM TO DO : Select appropriate squad on init as well as on receive focus
-// init coming from squad select - receive focus coming from squad barracks I believe
-// I think onLosefocus deals with back to squad select, but check it out.
-
 var localized string SquadManagementStr, TitleStr, OpenSquadMenuStr;
 
 var int PanelH, PanelW;
@@ -18,14 +14,15 @@ var UIList List;
 
 var array<StateObjectReference> SquadRefs;
 
+// KDM : If we are exiting the SquadBarracks and entering the Squad Menu, we want to maintain selection
+// consistency; save the cached index within SquadBarrack's OnRemoved() and use it within Squad Menu's OnReceiveFocus().
+var int CachedIndex;
+
 simulated function OnInit()
 {
 	super.OnInit();
 
 	MC.FunctionVoid("AnimateIn");
-
-	Navigator.SetSelected(List);
-	List.SetSelectedIndex(0);
 }
 
 simulated function InitScreen(XComPlayerController InitController, UIMovie InitMovie, optional name InitName)
@@ -86,17 +83,18 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	List.InitList(, BorderPadding, NextY, PanelW - (BorderPadding * 2) - 20, PanelH - NextY - BorderPadding);
 	
 	RefreshData();
+	UpdateSelection(false);
 	
 	UpdateNavHelp();
 }
 
 simulated function RefreshData()
 {
-	// KDM : UpdateData() fills in the SquadRefs array; most of this code is from UISquad_DropDown.UpdateData().
 	UpdateData();
 	UpdateList();
 }
 
+// KDM : UpdateData() fills in the SquadRefs array; most of this code is from UISquad_DropDown.UpdateData().
 simulated function UpdateData()
 {
 	local int i;
@@ -111,7 +109,7 @@ simulated function UpdateData()
 	{
 		Squad = SquadManager.GetSquad(i);
 
-		if ((!Squad.bOnMission) && Squad.CurrentMission.ObjectID == 0)
+		if ((!Squad.bOnMission) && (Squad.CurrentMission.ObjectID == 0))
 		{
 			SquadRefs.AddItem(Squad.GetReference());
 		}
@@ -120,21 +118,41 @@ simulated function UpdateData()
 
 simulated function UpdateList()
 {
-	local int SelectedIndex;
+	//local int SelectedIndex;
 
-	SelectedIndex = List.SelectedIndex;
+	//SelectedIndex = List.SelectedIndex;
 
 	List.ClearItems();
 
 	PopulateList();
 
+	/*
 	if ((SelectedIndex < 0 || SelectedIndex >= List.ItemCount) && List.ItemCount > 0)
 	{
 		SelectedIndex = 0;
 	}
 
+	UpdateSelection();*/
+}
+
+simulated function UpdateSelection(optional bool UseCachedIndex = false)
+{
+	local int Index;
+
 	Navigator.SetSelected(List);
-	List.SetSelectedIndex(SelectedIndex);
+
+	if (UseCachedIndex)
+	{
+		// KDM : Select the squad which was last looked at in the SquadBarracks, before it was closed.
+		Index = CachedIndex;
+	}
+	else
+	{
+		// KDM : Select the squad that is currently being looked at in the Squad Select screen.
+		Index = class'Utilities'.static.ListIndexWithSquadReference(List, `LWSQUADMGR.LaunchingMissionSquad);
+	}
+	
+	class'Utilities'.static.SetSelectedIndexWithScroll(List, Index, true);
 }
 
 simulated function PopulateList()
@@ -187,8 +205,7 @@ simulated function OnSquadSelected(StateObjectReference SelectedSquadRef)
 		CurrentSquadIcon.Update();
 	}
 
-	// KDM : Once a squad has been selected, just close the menu; I can't see any reason why someone would select several
-	// squads within this menu screen.
+	// KDM : Once a squad has been selected, just close the menu.
 	CloseScreen();
 }
 
@@ -263,12 +280,13 @@ simulated function CloseScreen()
 {
 	local robojumper_UISquadSelect SquadSelectScreen;
 	
-	SquadSelectScreen = robojumper_UISquadSelect(`HQPRES.ScreenStack.GetScreen(class'robojumper_UISquadSelect'));
+	SquadSelectScreen = class'Utilities'.static.GetRobojumpersSquadSelectFromStack();
+	// KDM TO REMOVE robojumper_UISquadSelect(`HQPRES.ScreenStack.GetScreen(class'robojumper_UISquadSelect'));
 
 	if (SquadSelectScreen != none)
 	{
-		// KDM : Update the squad select screen since we might have changed the selected squad or modified a squad
-		// via the squad management menu.
+		// KDM : We might have selected a new squad from the Squad Menu, or we might have made squad modifications via the 
+		// Squad Management screen; therefore, make sure we update the data.
 		SquadSelectScreen.UpdateData();
 	}
 
@@ -279,9 +297,11 @@ simulated function OnReceiveFocus()
 {
 	super.OnReceiveFocus();
 
-	// KDM : We could be, potentially, coming back from the squad management menu where squads could have been added/deleted/modified.
-	// Therefore, it's important we update the data as well as the associated list via RefreshData().
+	// KDM : We might have made squad modifications via the Squad Management screen; therefore, it's important we refresh the
+	// squad data, and update the squad list.
 	RefreshData();
+	UpdateSelection(true);
+
 	UpdateNavHelp();
 }
 
@@ -313,8 +333,8 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 	{
 		// KDM : B button closes the screen.
 		case class'UIUtilities_Input'.static.GetBackButtonInputCode() :
-			// KDM : OnSquadSelected guarantees the squad is updated upon closing the screen; this is important
-			// because squads might have been modified via the squad management screen.
+			// KDM : No squad was selected; however, the current squad could still have been modified via the Squad Management
+			// screen; therefore, call OnSquadSelected() to guarantee an update.
 			OnSquadSelected(`LWSQUADMGR.LaunchingMissionSquad);
 			break;
 
@@ -341,46 +361,6 @@ defaultproperties
 
 	PanelW = 400;
 	PanelH = 450;
+
+	CachedIndex = -1;
 }
-
-
-
-
-/*
-simulated function SetNavHelpTimer()
-{
-	if (!IsTimerActive(nameof(UpdateNavHelp)))
-	{
-		// KDM : Hide the navigation help system so we don't get flicker; it will be shown again within UpdateNavHelp().
-		`HQPRES.m_kAvengerHUD.NavHelp.Hide();
-
-		// KDM : Robojumper's squad select uses a variety of timers; one seems to update the navigation system with its own 
-		// information after a short period of time. Therefore, wait a little bit before resetting the navigation system.
-		SetTimer(0.03f, false, nameof(UpdateNavHelp), self);
-	}
-}
-
-simulated function RemoveNavHelpTimer()
-{
-	if (IsTimerActive(nameof(UpdateNavHelp)))
-	{
-		ClearTimer(nameof(UpdateNavHelp));
-	}
-}
-
-simulated function OnLoseFocus()
-{
-	`HQPRES.m_kAvengerHUD.NavHelp.ClearButtonHelp();
-
-	RemoveNavHelpTimer();
-
-	super.OnLoseFocus();
-}
-
-simulated function OnRemoved()
-{
-	RemoveNavHelpTimer();
-
-	super.OnRemoved();
-}
-*/

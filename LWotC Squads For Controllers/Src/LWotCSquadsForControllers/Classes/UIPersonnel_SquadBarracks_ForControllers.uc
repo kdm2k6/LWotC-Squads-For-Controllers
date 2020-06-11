@@ -213,14 +213,32 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	m_kList.InitList('listAnchor', XLoc, YLoc, m_iMaskWidth - 20, m_iMaskHeight);
 	m_kList.MoveToHighestDepth();
 
-	// KDM : If at least 1 squad exists, select the 1st one by setting CurrentSquadIndex to 0.
-	// If no squads exist, signify this by setting CurrentSquadIndex to -1.
-	CurrentSquadIndex = (SquadsExist()) ? 0 : -1;
+	SetInitialCurrentSquadIndex();
 
 	SetUIFocus(false, true);
 	UpdateAll(true);
 
 	UpdateNavHelp();
+}
+
+simulated function SetInitialCurrentSquadIndex()
+{
+	local UISquadMenu SquadMenu;
+
+	SquadMenu = class'Utilities'.static.GetUISquadMenuFromStack();
+
+	if (SquadMenu != none)
+	{
+		// KDM : We are entering the SquadBarracks through : Robojumpers Squad Select --> Squad Menu.
+		// In this case, select the squad which was last highlighted in the Squad Menu, if possible.
+		CurrentSquadIndex = (SquadsExist()) ? SquadMenu.List.SelectedIndex : -1;
+	}
+	else
+	{
+		// KDM : We are entering the SquadBarracks through the normal 'Squad Management' tab.
+		// In this case, simply select the 1st squad if possible.
+		CurrentSquadIndex = (SquadsExist()) ? 0 : -1;
+	}
 }
 
 simulated function CreateSortableHeader()
@@ -559,7 +577,7 @@ simulated function CreateSquad()
 	// KDM : Adding or deleting a squad messes up the underlying squad data; therefore, make the newly created squad
 	// the selected squad. If you want to see this problem in action : start a mission, note the squad, exit out of the
 	// mission, add a squad, start the same mission and see a random squad.
-	class'UISquadMenu'.static.SetSquad(`LWSQUADMGR.Squads[CurrentSquadIndex]);
+	//class'UISquadMenu'.static.SetSquad(`LWSQUADMGR.Squads[CurrentSquadIndex]);
 }
 
 simulated function DeleteSelectedSquad()
@@ -615,7 +633,7 @@ simulated function OnDeleteSelectedSquadCallback(Name eAction)
 
 		// KDM : Adding or deleting a squad messes up the underlying squad data; therefore, use CurrentSquadIndex for our 
 		// selected squad.
-		class'UISquadMenu'.static.SetSquad(`LWSQUADMGR.Squads[CurrentSquadIndex]);
+		// class'UISquadMenu'.static.SetSquad(`LWSQUADMGR.Squads[CurrentSquadIndex]);
 	}
 }
 
@@ -847,6 +865,22 @@ simulated function OnLoseFocus()
 	`HQPRES.m_kAvengerHUD.NavHelp.ClearButtonHelp();
 
 	super.OnLoseFocus();
+}
+
+simulated function OnRemoved()
+{
+	local UISquadMenu SquadMenu;
+
+	SquadMenu = class'Utilities'.static.GetUISquadMenuFromStack();
+	
+	if (SquadMenu != none)
+	{
+		// KDM : We are exiting the SquadBarracks back to the Squad Menu.
+		// Save the index of the squad we are looking at, so it can be selected when the Squad Menu receives focus.
+		SquadMenu.CachedIndex = CurrentSquadIndex;
+	}
+
+	super.OnRemoved();
 }
 
 simulated function UpdateNavHelp()

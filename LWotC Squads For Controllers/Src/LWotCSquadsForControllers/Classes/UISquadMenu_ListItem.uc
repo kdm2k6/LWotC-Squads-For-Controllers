@@ -42,7 +42,7 @@ simulated function InitListItem(optional StateObjectReference _SquadRef, optiona
 	OwningList = UIList(GetParent(class'UIList'));
 
 	// KDM : If this is a list item in a list, use the list's width; if it is being used as a separate UI element
-	// to show the current squad, just set the width manually.
+	// to show the current squad, set the width manually.
 	if (OwningList != none)
 	{
 		SetWidth(OwningList.Width);
@@ -54,12 +54,14 @@ simulated function InitListItem(optional StateObjectReference _SquadRef, optiona
 
 	// KDM : Background button.
 	ButtonBG = Spawn(class'UIButton', self);
+	ButtonBG.bAnimateOnInit = false;
 	ButtonBG.bIsNavigable = false;
 	ButtonBG.InitButton(, , , eUIButtonStyle_NONE);
 	ButtonBG.SetSize(Width, Height);
 
 	// KDM : Squad icon.
 	SquadImage = Spawn(class'UIImage', self);
+	SquadImage.bAnimateOnInit = false;
 	SquadImage.InitImage();
 	ImageSize = Height - (BorderPadding * 2);
 	SquadImage.SetSize(ImageSize, ImageSize);
@@ -67,6 +69,7 @@ simulated function InitListItem(optional StateObjectReference _SquadRef, optiona
 
 	// KDM : Squad name.
 	SquadNameText = Spawn(class'UIScrollingText', self);
+	SquadNameText.bAnimateOnInit = false;
 	TextX = BorderPadding + ImageSize + BorderPadding;
 	TextWidth = Width - (TextX + BorderPadding);
 	SquadNameText.InitScrollingText(, "Setup Text", TextWidth, TextX, 2);
@@ -77,16 +80,10 @@ simulated function Update()
 	local XComGameState_LWPersistentSquad SquadState;
 
 	SquadState = XComGameState_LWPersistentSquad(`XCOMHISTORY.GetGameStateForObjectID(SquadRef.ObjectID));
-	
-	if (SquadState == none)
-	{
-		return;
-	}
+	if (SquadState == none) return;
 
 	SquadImage.LoadImage(SquadState.GetSquadImagePath());
-
 	SquadName = SquadState.sSquadName;
-	
 	UpdateSquadNameText(true);
 }
 
@@ -132,7 +129,10 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 	{
 		// KDM : A button selects the squad.
 		case class'UIUtilities_Input'.static.GetAdvanceButtonInputCode():
-			if (OwningMenu != none) OwningMenu.OnSquadSelected(SquadRef);
+			if (OwningMenu != none)
+			{
+				OwningMenu.OnSquadSelected(SquadRef);
+			}
 			break;
 
 		default:
@@ -145,10 +145,8 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 
 defaultproperties
 {
-	BorderPadding = 4;
-	TextSize = 28;
-
 	Height = 40;
 
-	// KDM : Originally I set Height to 44 and TextSize to 32; however, this was a little large.
+	BorderPadding = 4;
+	TextSize = 28;
 }
