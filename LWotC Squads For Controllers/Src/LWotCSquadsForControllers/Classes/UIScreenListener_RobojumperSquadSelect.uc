@@ -2,16 +2,16 @@ class UIScreenListener_RobojumperSquadSelect extends UIScreenListener;
 
 event OnInit(UIScreen Screen)
 {
-	local bool InSquadManagement;
+	// KDM REMOVAL local bool InSquadManagement;
 	local UISquadMenu_ListItem CurrentSquadIcon;
 	local XComHQPresentationLayer HQPres;
 
 	HQPres = `HQPRES;
 
-	InSquadManagement = HQPres.ScreenStack.IsInStack(class'UIPersonnel_SquadBarracks_ForControllers');
+	//InSquadManagement = HQPres.ScreenStack.IsInStack(class'UIPersonnel_SquadBarracks_ForControllers');
 
 	// KDM : If we are in the Squad Management screen we want to disable the squad menu.
-	if (InSquadManagement) return;
+	//if (InSquadManagement) return;
 
 	HQPres.ScreenStack.SubscribeToOnInputForScreen(Screen, OnRobojumperSquadSelectClick);
 
@@ -32,12 +32,34 @@ simulated function bool OnRobojumperSquadSelectClick(UIScreen Screen, int cmd, i
 		return false;
 	}
 
-	// KDM : Left stick click brings up the squad menu.
-	if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_L3)
+	// KDM : If we are viewing the current squad through the SquadBarracks, only allow the user to navigate
+	// the soldiers with the DPad and exit the screen with the B button. 
+	if (class'Utilities'.static.StackHasSquadBarracksForControllers())
 	{
-		OpenSquadMenu(Screen);
-		return true;
+		switch(cmd)
+		{
+			case class'UIUtilities_Input'.static.GetBackButtonInputCode():
+			case class'UIUtilities_Input'.const.FXS_DPAD_UP:
+			case class'UIUtilities_Input'.const.FXS_DPAD_DOWN:
+			case class'UIUtilities_Input'.const.FXS_DPAD_LEFT:
+			case class'UIUtilities_Input'.const.FXS_DPAD_RIGHT:
+				break;
+
+			default:
+				return true;
+				break;
+		}
 	}
+	else
+	{
+		// KDM : Left stick click brings up the squad menu.
+		if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_L3)
+		{
+			OpenSquadMenu(Screen);
+			return true;
+		}
+	}
+	
 
 	return false;
 }

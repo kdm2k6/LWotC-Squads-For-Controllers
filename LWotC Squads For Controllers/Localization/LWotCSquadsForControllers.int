@@ -12,7 +12,6 @@ SquadSoldiersStr="SQUAD SOLDIERS"
 AvailableSoldiersStr="AVAILABLE SOLDIERS"
 
 NoSquadsStr="NO SQUADS EXIST"
-DashesStr = "---------------"
 
 FocusUISquadStr ="FOCUS SQUAD UI"
 FocusUISoldiersStr="FOCUS SOLDIER UI"

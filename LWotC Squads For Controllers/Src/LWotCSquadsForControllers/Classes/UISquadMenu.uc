@@ -95,7 +95,7 @@ simulated function RefreshData()
 	UpdateList();
 }
 
-// KDM : UpdateData() fills in the SquadRefs array; most of this code is from UISquad_DropDown.UpdateData().
+// KDM : This code is based on the LW function : UISquad_DropDown.UpdateData().
 simulated function UpdateData()
 {
 	local int i;
@@ -105,7 +105,8 @@ simulated function UpdateData()
 	SquadManager = `LWSQUADMGR;
 
 	SquadRefs.Length = 0;
-		
+
+	// KDM : Fill the SquadRefs array.
 	for (i = 0; i < SquadManager.Squads.Length; i++)
 	{
 		Squad = SquadManager.GetSquad(i);
@@ -129,14 +130,14 @@ simulated function UpdateSelection(optional bool UseCachedIndex = false)
 
 	Navigator.SetSelected(List);
 
+	// KDM : Select the last squad viewed in SquadBarracks, before it was closed.
 	if (UseCachedIndex)
 	{
-		// KDM : Select the squad which was last looked at in the SquadBarracks, before it was closed.
 		Index = CachedIndex;
 	}
+	// KDM : Select the squad currently visible in the Squad Select screen.
 	else
 	{
-		// KDM : Select the squad that is currently being looked at in the Squad Select screen.
 		Index = class'Utilities'.static.ListIndexWithSquadReference(List, `LWSQUADMGR.LaunchingMissionSquad);
 	}
 	
@@ -176,16 +177,17 @@ function TitleStrSizeRealized()
 	RightDiagonals.SetHeaderWidth(DiagonalsWidth + 10, true);
 }
 
-
 simulated function OnSquadSelected(StateObjectReference SelectedSquadRef)
 {
 	local robojumper_UISquadSelect SquadSelectScreen;
 	local UISquadMenu_ListItem CurrentSquadIcon;
 	
-	SquadSelectScreen = robojumper_UISquadSelect(`HQPRES.ScreenStack.GetScreen(class'robojumper_UISquadSelect'));
-
+	SquadSelectScreen = class'Utilities'.static.GetRobojumpersSquadSelectFromStack();
+	
+	// KDM : Update the underlying LW squad data.
 	class'Utilities'.static.SetSquad(SelectedSquadRef);
 
+	// KDM : Update the current squad icon on the Squad Select screen.
 	CurrentSquadIcon = UISquadMenu_ListItem(SquadSelectScreen.GetChildByName('CurrentSquadIconForController', false));
 	if (CurrentSquadIcon != none)
 	{
@@ -193,7 +195,7 @@ simulated function OnSquadSelected(StateObjectReference SelectedSquadRef)
 		CurrentSquadIcon.Update();
 	}
 
-	// KDM : Once a squad has been selected, just close the menu.
+	// KDM : Close the Squad Menu once a squad has been selected.
 	CloseScreen();
 }
 
@@ -201,12 +203,12 @@ simulated function OpenSquadManagement()
 {
 	local UIPersonnel_SquadBarracks_ForControllers SquadManagementScreen;
 	
+	// KDM REMOVE : I DON'T THINK THIS IS NEEDED ANYMORE
 	// KDM : If we are viewing the squad through SquadBarracks, do not allow squad management to open.
 	// This simulates what is done within UISquadContainer.
-	if (`HQPRES.ScreenStack.IsInStack(class'UIPersonnel_SquadBarracks_ForControllers')) return;
-
+	// if (class'Utilities'.static.StackHasSquadBarracksForControllers()) return;
+	
 	SquadManagementScreen = `HQPRES.Spawn(class'UIPersonnel_SquadBarracks_ForControllers', `HQPRES);
-	SquadManagementScreen.bSelectSquad = true;
 	`HQPRES.ScreenStack.Push(SquadManagementScreen);
 }
 
@@ -232,8 +234,8 @@ simulated function CloseScreen()
 	
 	if (SquadSelectScreen != none)
 	{
-		// KDM : We might have selected a new squad from the Squad Menu, or we might have made squad modifications via the 
-		// Squad Management screen; therefore, make sure we update the data.
+		// KDM : Update the Squad Select screen data since we might have entered the Squad Management screen, via the Squad Menu,
+		// and made any number of squad modifications. If we don't do this, we may end up with a 'dirty' Squad Select screen.
 		SquadSelectScreen.UpdateData();
 	}
 
@@ -244,8 +246,8 @@ simulated function OnReceiveFocus()
 {
 	super.OnReceiveFocus();
 
-	// KDM : We might have made squad modifications via the Squad Management screen; therefore, it's important we refresh the
-	// squad data, and update the squad list.
+	// KDM : Update the Squad Menu list since we might have entered the Squad Management screen and made any number of squad 
+	// modifications. If we don't do this, we may end up with a 'dirty' Squad Menu.
 	RefreshData();
 	UpdateSelection(true);
 
@@ -280,12 +282,12 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 	{
 		// KDM : B button closes the screen.
 		case class'UIUtilities_Input'.static.GetBackButtonInputCode() :
-			// KDM : No squad was selected; however, the current squad could still have been modified via the Squad Management
-			// screen; therefore, call OnSquadSelected() to guarantee an update.
+			// KDM : Even though no squad was selected, the current squad could have been modified via the Squad Management
+			// screen. Therefore, call OnSquadSelected() to guarantee we don't end up with a 'dirty' Squad Select screen.
 			OnSquadSelected(`LWSQUADMGR.LaunchingMissionSquad);
 			break;
 
-		// KDM : Select button opens the squad management screen.
+		// KDM : Left stick click opens the Squad Management screen.
 		case class'UIUtilities_Input'.const.FXS_BUTTON_L3:
 			OpenSquadManagement();
 			break;

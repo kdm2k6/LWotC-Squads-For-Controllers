@@ -29,10 +29,18 @@ static function EventListenerReturn OnUISquadSelect_NavHelpUpdate(Object EventDa
 	
 	NavHelp = UINavigationHelp(EventData);
 	
-	// KDM : If we are in the squad management screen the squad menu is disabled.
-	if (!`HQPRES.ScreenStack.IsInStack(class'UIPersonnel_SquadBarracks_ForControllers'))
+	// KDM : We have reached the Squad Select screen through : SquadBarracks --> View Current Squad.
+	// In this case, we only allow the user to select soldiers with the DPad and exit the screen with the B button.
+	if (class'Utilities'.static.StackHasSquadBarracksForControllers())
 	{
-		// KDM : Left stick click on the squad select screen opens up the squad menu.
+		NavHelp.ClearButtonHelp();
+		NavHelp.AddBackButton();
+		NavHelp.Show();
+	}
+	// KDM : We have reached the Squad Select screen normally.
+	else
+	{
+		// KDM : Left stick click opens up the Squad Menu.
 		NavHelp.AddRightHelp(class'UISquadMenu'.default.OpenSquadMenuStr, class'UIUtilities_Input'.const.ICON_LSCLICK_L3);
 	}
 

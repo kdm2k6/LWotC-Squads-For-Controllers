@@ -9,12 +9,15 @@ class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadS
 // UIPersonnel_SquadBarracks_ForControllers is on stack, I think - think about it
 // 3. Only thing I haven't really tested is View Squad - probably actually test, but then jsut make it a config variable
 // set to false by default - since save functionality doesn't even work.
+// 4. If squad on a mission what can and can't happen ?
+// 5. Make sure I don't look for A button or B button - do special function call stuff
+// 6. Look for KDM REMOVE comments - these are likely no longer needed.
 
-
-// KDM : LW2 variables.
+// KDM : I don't use bSelectSquad; however, it is referenced in LW2 files, so just leave it here and ignore it.
 var bool bSelectSquad;
-var array<StateObjectReference> CachedSquad;
-var bool bRestoreCachedSquad;
+
+var StateObjectReference CachedSquad;
+var bool RestoreCachedSquad;
 
 // KDM : This is needed for the squad icon selector.
 var config array<string> SquadImagePaths;
@@ -809,19 +812,42 @@ simulated function UpdateTabsForFocus()
 	}
 }
 
-function ViewCurrentSquad()
+simulated function bool CanViewCurrentSquad()
 {
-	local XComGameState NewGameState;
-	local XComGameState_LWPersistentSquad CurrentSquadState;
-	local XComGameState_LWSquadManager SquadManager, UpdatedSquadManager;
+	local robojumper_UISquadSelect SquadSelectScreen;
+
+	SquadSelectScreen = class'Utilities'.static.GetRobojumpersSquadSelectFromStack();
 	
-	if (!CurrentSquadIsValid()) return;
+	if (!CurrentSquadIsValid()) return false;
+	// KDM : Don't allow squad viewing when coming through : Squad Select --> Squad Menu.
+	if (SquadSelectScreen != none) return false;
+	// KDM : LW logic which doesn't allow squad viewing if the squad is on a mission; this is a good idea, as I don't want to
+	// make an on-mission squad temporarily active. 
+	if (GetCurrentSquad().bOnMission) return false;
+
+	return true;
+}
+
+simulated function ViewCurrentSquad()
+{
+	//local XComGameState NewGameState;
+	//local XComGameState_LWSquadManager SquadManager, UpdatedSquadManager;
 	
-	CurrentSquadState = GetCurrentSquad();
+	if (!CanViewCurrentSquad()) return;
+
+	// KDM : Store the current mission squad.
+	CachedSquad = `LWSQUADMGR.LaunchingMissionSquad;
+	RestoreCachedSquad = true;
+
+	// KDM : Set the selected squad as the mission squad, so we can temporarily view it.
+	class'Utilities'.static.SetSquad(GetCurrentSquad().GetReference());
+	
+	`HQPRES.UISquadSelect();
+
 
 	// KDM : In LW2, these conditions disabled the button whose click called this function. Since I create no such button,
 	// just return if these conditions are met.
-	if (bSelectSquad && CurrentSquadState.bOnMission) return;
+	/*if (bSelectSquad && CurrentSquadState.bOnMission) return;
 
 	if (bSelectSquad)
 	{
@@ -845,17 +871,25 @@ function ViewCurrentSquad()
 		bRestoreCachedSquad = true;
 
 		`HQPRES.UISquadSelect();
-	}
+	}*/
 }
 
 // KDM : TO FINISH FUNCTION
 simulated function OnReceiveFocus()
 {
-	local XComGameState_HeadquartersXCom XComHQ;
-	local XComGameState NewGameState;
+	//local XComGameState_HeadquartersXCom XComHQ;
+	//local XComGameState NewGameState;
+
+	// KDM : We are coming back from viewing a squad.
+	if (RestoreCachedSquad)
+	{
+		RestoreCachedSquad = false;
+
+		class'Utilities'.static.SetSquad(CachedSquad);
+	}
 
 	// LWS : If you were in 'view mode', restore the previously selected squad.
-	if (bRestoreCachedSquad)
+	/*if (bRestoreCachedSquad)
 	{
 		NewGameState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Restore previous soldiers to XComHQ Squad");
 		XComHQ = XComGameState_HeadquartersXCom(NewGameState.CreateStateObject(class'XComGameState_HeadquartersXCom', `XCOMHQ.ObjectID));
@@ -869,7 +903,7 @@ simulated function OnReceiveFocus()
 		// KDM : IS THE CURRENT INDEX AND UI STILL OK? NEED TO TEST.
 		// CurrentSquadIndex = ((CurrentSquadIndex - 1) < 0) ? (GetTotalSquads() - 1) : CurrentSquadIndex - 1;
 		// UpdateAll(true, true);
-	}
+	}*/
 
 	super(UIScreen).OnReceiveFocus();
 	UpdateNavHelp();
@@ -935,9 +969,7 @@ simulated function UpdateNavHelp()
 			NavHelp.AddCenterHelp(PrevSquadStr, class'UIUtilities_Input'.const.ICON_LB_L1);
 			NavHelp.AddCenterHelp(NextSquadStr, class'UIUtilities_Input'.const.ICON_RB_R1);
 
-			// KDM : If we are coming through the squad select screen, or if the squad is on a mission, don't allow
-			// squad viewing; this is mainly LW2 logic which I don't want to mess with.
-			if (!(bSelectSquad || GetCurrentSquad().bOnMission))
+			if (CanViewCurrentSquad())
 			{
 				// KDM : For some reason, bIsVerticalHelp has to be false for the right container, else the help falls off the side of the screen.
 				NavHelp.bIsVerticalHelp = false;

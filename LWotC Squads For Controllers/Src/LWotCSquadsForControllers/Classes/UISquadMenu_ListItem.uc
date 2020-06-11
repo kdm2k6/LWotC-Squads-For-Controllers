@@ -29,7 +29,7 @@ simulated function InitListItem(optional StateObjectReference _SquadRef, optiona
 {
 	local int ImageSize, TextX, TextWidth;
 
-	// KDM : When used as a separate UI element to show the current squad, we need to set the squad reference first before
+	// KDM : When used as a separate UI element, to show the current squad, we need to set the squad reference before
 	// calling InitListItem() on a delay. In that case, we don't want to overwrite the squad reference.
 	if (!IgnoreSquadRef) 
 	{
@@ -41,8 +41,7 @@ simulated function InitListItem(optional StateObjectReference _SquadRef, optiona
 
 	OwningList = UIList(GetParent(class'UIList'));
 
-	// KDM : If this is a list item in a list, use the list's width; if it is being used as a separate UI element
-	// to show the current squad, set the width manually.
+	// KDM : If this is a list item, use the list's width; if this is a separate UI element, set the width manually.
 	if (OwningList != none)
 	{
 		SetWidth(OwningList.Width);
