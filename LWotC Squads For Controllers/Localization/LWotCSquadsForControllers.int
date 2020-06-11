@@ -11,7 +11,7 @@ BiographyStr="Squad Biography : <XGParam:StrValue0>"
 SquadSoldiersStr="SQUAD SOLDIERS"
 AvailableSoldiersStr="AVAILABLE SOLDIERS"
 
-NoSquadsStr="NONE AVAILABLE"
+NoSquadsStr="NO SQUADS EXIST"
 DashesStr = "---------------"
 
 FocusUISquadStr ="FOCUS SQUAD UI"

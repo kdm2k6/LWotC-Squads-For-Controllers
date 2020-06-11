@@ -77,6 +77,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 
 	// KDM : List container which will hold rows of buttons.
 	List = Spawn(class'UIList', MainPanel);
+	List.bAnimateOnInit = false;
 	List.bIsNavigable = true;
 	List.bStickyHighlight = false;
 	List.ItemPadding = 6;
@@ -118,21 +119,8 @@ simulated function UpdateData()
 
 simulated function UpdateList()
 {
-	//local int SelectedIndex;
-
-	//SelectedIndex = List.SelectedIndex;
-
 	List.ClearItems();
-
 	PopulateList();
-
-	/*
-	if ((SelectedIndex < 0 || SelectedIndex >= List.ItemCount) && List.ItemCount > 0)
-	{
-		SelectedIndex = 0;
-	}
-
-	UpdateSelection();*/
 }
 
 simulated function UpdateSelection(optional bool UseCachedIndex = false)
@@ -214,7 +202,7 @@ simulated function OpenSquadManagement()
 	local UIPersonnel_SquadBarracks_ForControllers SquadManagementScreen;
 	
 	// KDM : If we are viewing the squad through SquadBarracks, do not allow squad management to open.
-	// This simulates what is done with UISquadContainer.
+	// This simulates what is done within UISquadContainer.
 	if (`HQPRES.ScreenStack.IsInStack(class'UIPersonnel_SquadBarracks_ForControllers')) return;
 
 	SquadManagementScreen = `HQPRES.Spawn(class'UIPersonnel_SquadBarracks_ForControllers', `HQPRES);
@@ -241,8 +229,7 @@ simulated function CloseScreen()
 	local robojumper_UISquadSelect SquadSelectScreen;
 	
 	SquadSelectScreen = class'Utilities'.static.GetRobojumpersSquadSelectFromStack();
-	// KDM TO REMOVE robojumper_UISquadSelect(`HQPRES.ScreenStack.GetScreen(class'robojumper_UISquadSelect'));
-
+	
 	if (SquadSelectScreen != none)
 	{
 		// KDM : We might have selected a new squad from the Squad Menu, or we might have made squad modifications via the 

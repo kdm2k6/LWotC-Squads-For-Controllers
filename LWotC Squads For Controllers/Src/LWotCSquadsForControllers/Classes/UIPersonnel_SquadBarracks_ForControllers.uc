@@ -3,12 +3,10 @@ class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadS
 // KDM NOTES :
 // Turn off autofill squads for RJ squad select or else empty LW squads will be filled out with individuals.
 
-
-
-// KDM TO DO : IF NO SQUAD'S EXIST - NEED to do testing for various things since I haven't checked it out at all.
+// KDM TO DO :
+// 1. IF NO SQUAD'S EXIST - NEED to do testing for various things since I haven't checked it out at all.
 // How does it handle it?
-
-// Update LWotc regarding detailed soldier list - getting rid of nav help button if controller is active while
+// 2. Update LWotc regarding detailed soldier list - getting rid of nav help button if controller is active while
 // UIPersonnel_SquadBarracks_ForControllers is on stack, I think - think about it
 
 
@@ -53,8 +51,8 @@ simulated function OnInit()
 {
 	super.OnInit();
 
-	// KDM : Hide pre-built UI elements we won't be using via Flash; the alternative is to spawn them, init them with the appropriate
-	// MC name, then hide them.
+	// KDM : Hide pre-built UI elements we won't be using via Flash; the alternative is to : 
+	// 1.] Spawn them 2.] Init them with the appropriate MC name 3.] Hide them.
 	MC.ChildFunctionVoid("SoldierListBG", "Hide");
 	MC.ChildFunctionVoid("deceasedSort", "Hide");
 	MC.ChildFunctionVoid("personnelSort", "Hide");
@@ -163,7 +161,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	SoldierIconList = Spawn(class'UIList', MainPanel);
 	SoldierIconList.InitList(, XLoc, YLoc, WidthVal, HeightVal, true);
 
-	// KDM : Squad mission information & biography.
+	// KDM : Current squad's biography.
 	XLoc = CurrentSquadStatus.X;
 	YLoc = SoldierIconList.Y + SoldierIconList.Height + 10;
 	WidthVal = PanelW - SquadIconSize - (BorderPadding * 3);
@@ -229,7 +227,7 @@ simulated function SetInitialCurrentSquadIndex()
 	else
 	{
 		// KDM : We are entering the SquadBarracks through the normal 'Squad Management' tab.
-		// In this case, simply select the 1st squad if possible.
+		// In this case, simply select the 1st squad, if possible.
 		CurrentSquadIndex = (SquadsExist()) ? 0 : -1;
 	}
 }
@@ -274,6 +272,13 @@ simulated function UpdateSquadUI()
 	// KDM : If no squads exist set up the UI a little differently, then exit.
 	if (NoSquads)
 	{
+		SquadHeader.SetText(NoSquadsStr);
+		SquadHeader.MC.FunctionVoid("realize");
+		CurrentSquadIcon.Hide();
+		CurrentSquadStatus.SetHTMLText("");
+		CurrentSquadMissions.SetHTMLText("");
+		SoldierIconList.Hide();
+		CurrentSquadBio.SetText("");
 		return;
 	}
 
@@ -294,6 +299,7 @@ simulated function UpdateSquadUI()
 
 	// KDM : Set the squad icon.
 	CurrentSquadIcon.LoadImage(CurrentSquadState.GetSquadImagePath());
+	CurrentSquadIcon.Show();
 	
 	// KDM : Set the squad status; it will be wither 'ON MISSION' or 'AVAILABLE'.
 	SquadStatus = (CurrentSquadState.IsDeployedOnMission()) ? class'UISquadListItem'.default.sSquadOnMission : class'UISquadListItem'.default.sSquadAvailable;
@@ -314,6 +320,7 @@ simulated function UpdateSquadUI()
 	
 	// KDM : Update the soldier icon list.
 	UpdateSoldierClassIcons(CurrentSquadState);
+	SoldierIconList.Show();
 
 	// KDM : Set the squad biography; this includes the number of missions on the 1st line.
 	ParamTag = XGParamTag(`XEXPANDCONTEXT.FindTag("XGParam"));

@@ -10,14 +10,12 @@ event OnInit(UIScreen Screen)
 
 	InSquadManagement = HQPres.ScreenStack.IsInStack(class'UIPersonnel_SquadBarracks_ForControllers');
 
-	// KDM : If we are in the squad management screen we want to disable the squad menu.
-	// This is analogous to what is done in UIScreenListener_SquadSelect_LW.OnInit in regards to SquadContainer,
-	// the UIPanel we are trying to replicate.
+	// KDM : If we are in the Squad Management screen we want to disable the squad menu.
 	if (InSquadManagement) return;
 
 	HQPres.ScreenStack.SubscribeToOnInputForScreen(Screen, OnRobojumperSquadSelectClick);
 
-	// KDM : A UI element which shows the current squad, on the squad select screen.
+	// KDM : A UI element which shows the current squad, on the Squad Select screen.
 	CurrentSquadIcon = Screen.Spawn(class'UISquadMenu_ListItem', Screen);
 	CurrentSquadIcon.MCName = 'CurrentSquadIconForController';
 	CurrentSquadIcon.SquadRef = `LWSQUADMGR.LaunchingMissionSquad;
@@ -84,11 +82,7 @@ simulated function OpenSquadMenu(UIScreen Screen)
 
 event OnRemoved(UIScreen Screen)
 {
-	local XComHQPresentationLayer HQPres;
-
-	HQPres = `HQPRES;
-
-	HQPres.ScreenStack.UnsubscribeFromOnInputForScreen(Screen, OnRobojumperSquadSelectClick);
+	`HQPRES.ScreenStack.UnsubscribeFromOnInputForScreen(Screen, OnRobojumperSquadSelectClick);
 }
 
 defaultproperties

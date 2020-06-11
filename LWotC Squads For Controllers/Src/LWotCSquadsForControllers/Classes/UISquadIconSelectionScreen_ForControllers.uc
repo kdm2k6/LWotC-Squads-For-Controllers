@@ -1,4 +1,4 @@
-// Based off Better Squad Icon Selector by Robojumper.
+// KDM : Based off Better Squad Icon Selector by Robojumper.
 
 class UISquadIconSelectionScreen_ForControllers extends UIScreen config(SquadSettings);
 
