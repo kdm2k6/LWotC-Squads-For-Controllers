@@ -2,20 +2,20 @@ class UIScreenListener_RobojumperSquadSelect extends UIScreenListener;
 
 event OnInit(UIScreen Screen)
 {
-	// KDM REMOVAL local bool InSquadManagement;
+	// KDM REMOVE local bool InSquadManagement;
 	local UISquadMenu_ListItem CurrentSquadIcon;
 	local XComHQPresentationLayer HQPres;
 
 	HQPres = `HQPRES;
 
+	// KDM REMOVE
 	//InSquadManagement = HQPres.ScreenStack.IsInStack(class'UIPersonnel_SquadBarracks_ForControllers');
-
 	// KDM : If we are in the Squad Management screen we want to disable the squad menu.
 	//if (InSquadManagement) return;
 
 	HQPres.ScreenStack.SubscribeToOnInputForScreen(Screen, OnRobojumperSquadSelectClick);
 
-	// KDM : A UI element which shows the current squad, on the Squad Select screen.
+	// KDM : Icon, on the Squad Select screen, showing the currently selected squad.
 	CurrentSquadIcon = Screen.Spawn(class'UISquadMenu_ListItem', Screen);
 	CurrentSquadIcon.MCName = 'CurrentSquadIconForController';
 	CurrentSquadIcon.SquadRef = `LWSQUADMGR.LaunchingMissionSquad;
@@ -32,8 +32,8 @@ simulated function bool OnRobojumperSquadSelectClick(UIScreen Screen, int cmd, i
 		return false;
 	}
 
-	// KDM : If we are viewing the current squad through the SquadBarracks, only allow the user to navigate
-	// the soldiers with the DPad and exit the screen with the B button. 
+	// KDM : If we are viewing the Squad Select screen through : SquadBarracks --> View Current Squad, we only want
+	// the user to be able to 1.] Select soldiers with the DPad 2.] Close the screen with the B buton.
 	if (class'Utilities'.static.StackHasSquadBarracksForControllers())
 	{
 		switch(cmd)
@@ -43,6 +43,8 @@ simulated function bool OnRobojumperSquadSelectClick(UIScreen Screen, int cmd, i
 			case class'UIUtilities_Input'.const.FXS_DPAD_DOWN:
 			case class'UIUtilities_Input'.const.FXS_DPAD_LEFT:
 			case class'UIUtilities_Input'.const.FXS_DPAD_RIGHT:
+				// KDM : Allow these buttons through.
+				return false;
 				break;
 
 			default:
@@ -50,9 +52,10 @@ simulated function bool OnRobojumperSquadSelectClick(UIScreen Screen, int cmd, i
 				break;
 		}
 	}
+	// KDM : If we are viewing the Squad Select screen normally, allow the user to open up the Squad Menu with left stick click.
 	else
 	{
-		// KDM : Left stick click brings up the squad menu.
+		// KDM : Left stick click opens up the Squad Menu.
 		if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_L3)
 		{
 			OpenSquadMenu(Screen);
@@ -60,7 +63,6 @@ simulated function bool OnRobojumperSquadSelectClick(UIScreen Screen, int cmd, i
 		}
 	}
 	
-
 	return false;
 }
 
@@ -75,7 +77,7 @@ simulated function OpenSquadMenu(UIScreen Screen)
 
 	if (SquadSelectScreen == none)
 	{
-		`log("*** There is a big problem with UIScreenListener_RobojumperSquadSelect : SquadSelectScreen == none ***");
+		`log("*** KDM ERROR : UIScreenListener_RobojumperSquadSelect.OpenSquadMenu : SquadSelectScreen == none ***");
 		return;
 	}
 
@@ -84,8 +86,7 @@ simulated function OpenSquadMenu(UIScreen Screen)
 	// KDM : If Robojumper's Squad Select has the option "Skip Intro" turned on, bInstantLineupUI = true.
 	if (!SquadSelectScreen.bInstantLineupUI)
 	{
-		// KDM : Since we are bringing up a squad related menu, simply finish the intro cinematic if it is in progress.
-		// This actually creates a nice, zooming in effect.
+		// KDM : Finish the intro 'walk-in' cinematic since we are opening up the Squad Menu.
 		SquadSelectScreen.FinishIntroCinematic();
 	}
 
