@@ -1,5 +1,8 @@
-// KDM : Based off Better Squad Icon Selector by Robojumper.
-
+//----------------------------------------------------------------------------
+//	FILE:		UISquadIconSelectionScreen_ForControllers.uc
+//	AUTHOR:		Robojumper
+//	PURPOSE:	A slight modification to Robojumper's Squad Icon Selector mod.
+//----------------------------------------------------------------------------
 class UISquadIconSelectionScreen_ForControllers extends UIScreen config(SquadSettings);
 
 // Screen reference needed for callbacks.
@@ -77,9 +80,7 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 	
 	switch (cmd)
 	{
-		case class'UIUtilities_Input'.const.FXS_BUTTON_B:
-		case class'UIUtilities_Input'.const.FXS_KEY_ESCAPE:
-		case class'UIUtilities_Input'.const.FXS_R_MOUSE_DOWN:
+		case class'UIUtilities_Input'.static.GetBackButtonInputCode():
 			OnCancel();
 			break;
 		

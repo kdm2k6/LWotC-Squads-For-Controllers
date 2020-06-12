@@ -1,3 +1,8 @@
+//----------------------------------------------------------------------------
+//	FILE:		UISquadMenu.uc
+//	AUTHOR:		Keith (kdm2k6)
+//	PURPOSE:	A menu which lets you choose which squad to view within the Squad Select screen.
+//----------------------------------------------------------------------------
 class UISquadMenu extends UIScreen;
 
 var localized string SquadManagementStr, TitleStr, OpenSquadMenuStr;
@@ -202,11 +207,6 @@ simulated function OnSquadSelected(StateObjectReference SelectedSquadRef)
 simulated function OpenSquadManagement()
 {
 	local UIPersonnel_SquadBarracks_ForControllers SquadManagementScreen;
-	
-	// KDM REMOVE : I DON'T THINK THIS IS NEEDED ANYMORE
-	// KDM : If we are viewing the squad through SquadBarracks, do not allow squad management to open.
-	// This simulates what is done within UISquadContainer.
-	// if (class'Utilities'.static.StackHasSquadBarracksForControllers()) return;
 	
 	SquadManagementScreen = `HQPRES.Spawn(class'UIPersonnel_SquadBarracks_ForControllers', `HQPRES);
 	`HQPRES.ScreenStack.Push(SquadManagementScreen);

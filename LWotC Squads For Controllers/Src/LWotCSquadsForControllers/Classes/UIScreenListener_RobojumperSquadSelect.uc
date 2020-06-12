@@ -1,17 +1,17 @@
+//----------------------------------------------------------------------------
+//	FILE:		UIScreenListener_RobojumperSquadSelect.uc
+//	AUTHOR:		Keith (kdm2k6)
+//	PURPOSE:	A screen listener which places an icon on the Squad Select screen denoting the current squad.
+//				It also allows you to open the Squad Menu with left stick click.
+//----------------------------------------------------------------------------
 class UIScreenListener_RobojumperSquadSelect extends UIScreenListener;
 
 event OnInit(UIScreen Screen)
 {
-	// KDM REMOVE local bool InSquadManagement;
 	local UISquadMenu_ListItem CurrentSquadIcon;
 	local XComHQPresentationLayer HQPres;
 
 	HQPres = `HQPRES;
-
-	// KDM REMOVE
-	//InSquadManagement = HQPres.ScreenStack.IsInStack(class'UIPersonnel_SquadBarracks_ForControllers');
-	// KDM : If we are in the Squad Management screen we want to disable the squad menu.
-	//if (InSquadManagement) return;
 
 	HQPres.ScreenStack.SubscribeToOnInputForScreen(Screen, OnRobojumperSquadSelectClick);
 

@@ -1,3 +1,8 @@
+//----------------------------------------------------------------------------
+//	FILE:		UISquadMenu_ListItem.uc
+//	AUTHOR:		Keith (kdm2k6)
+//	PURPOSE:	A Squad Menu list item, consisting of a background button, squad icon, and squad name. 
+//----------------------------------------------------------------------------
 class UISquadMenu_ListItem extends UIPanel;
 
 // KDM : Reference to a XComGameState_LWPersistentSquad.

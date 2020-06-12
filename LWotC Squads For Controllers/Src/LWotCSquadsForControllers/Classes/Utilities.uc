@@ -1,3 +1,8 @@
+//----------------------------------------------------------------------------
+//	FILE:		Utilities.uc
+//	AUTHOR:		Keith (kdm2k6)
+//	PURPOSE:	Miscellaneous helper utilities. 
+//----------------------------------------------------------------------------
 class Utilities extends object;
 
 static function bool StackHasRobojumpersSquadSelect()

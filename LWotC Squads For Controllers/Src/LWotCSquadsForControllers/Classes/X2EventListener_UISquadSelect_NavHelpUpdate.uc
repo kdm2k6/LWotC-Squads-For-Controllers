@@ -1,3 +1,8 @@
+//----------------------------------------------------------------------------
+//	FILE:		X2EventListener_UISquadSelect_NavHelpUpdate.uc
+//	AUTHOR:		Keith (kdm2k6)
+//	PURPOSE:	Within Robojumper's Squad Select screen, add a navigation help icon to open up the Squad Menu. 
+//----------------------------------------------------------------------------
 class X2EventListener_UISquadSelect_NavHelpUpdate extends X2EventListener;
 
 static function array<X2DataTemplate> CreateTemplates()

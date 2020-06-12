@@ -1,18 +1,18 @@
+//----------------------------------------------------------------------------
+//	FILE:		UIPersonnel_SquadBarracks_ForControllers.uc
+//	AUTHOR:		Keith (kdm2k6)
+//	PURPOSE:	A custom, controller-capable SquadBarracks designed nearly from scratch.
+//----------------------------------------------------------------------------
 class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadSettings);
 
 // KDM NOTES :
 // Turn off autofill squads for RJ squad select or else empty LW squads will be filled out with individuals.
 
 // KDM TO DO :
-// 1. IF NO SQUAD'S EXIST - NEED to do testing for various things since I haven't checked it out at all.
 // 2. Update LWotc regarding detailed soldier list - getting rid of nav help button if controller is active while
 // UIPersonnel_SquadBarracks_ForControllers is on stack, I think - think about it
-// 3. Only thing I haven't really tested is View Squad - probably actually test, but then jsut make it a config variable
-// set to false by default - since save functionality doesn't even work.
 // 4. If squad on a mission what can and can't happen ?
-// 5. Make sure I don't look for A button or B button - do special function call stuff
-// 6. Look for KDM REMOVE comments - these are likely no longer needed.
-// 7. Place little headers at top like LW does
+
 
 // KDM : I don't use bSelectSquad; however, it is referenced in LW2 files, so just leave it here and ignore it.
 var bool bSelectSquad;
@@ -822,10 +822,6 @@ simulated function bool CanViewCurrentSquad()
 
 simulated function ViewCurrentSquad()
 {
-	// KDM REMOVE
-	//local XComGameState NewGameState;
-	//local XComGameState_LWSquadManager SquadManager, UpdatedSquadManager;
-	
 	if (!CanViewCurrentSquad()) return;
 
 	// KDM : Store the current mission squad.
@@ -836,43 +832,10 @@ simulated function ViewCurrentSquad()
 	class'Utilities'.static.SetSquad(GetCurrentSquad().GetReference());
 	
 	`HQPRES.UISquadSelect();
-
-
-	// KDM : In LW2, these conditions disabled the button whose click called this function. Since I create no such button,
-	// just return if these conditions are met.
-	/*if (bSelectSquad && CurrentSquadState.bOnMission) return;
-
-	if (bSelectSquad)
-	{
-		NewGameState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Assign persistent squad as current mission squad");
-		SquadManager = `LWSQUADMGR;
-		UpdatedSquadManager = XComGameState_LWSquadManager(NewGameState.CreateStateObject(SquadManager.Class, SquadManager.ObjectID));
-		NewGameState.AddStateObject(UpdatedSquadManager);
-		UpdatedSquadManager.LaunchingMissionSquad = CurrentSquadState.GetReference();
-	
-		CurrentSquadState.SetSquadCrew(NewGameState, false, false);
-
-		`GAMERULES.SubmitGameState(NewGameState);
-
-		CloseScreen();
-	}
-	else
-	{
-		CurrentSquadState.SetSquadCrew(, CurrentSquadState.bTemporary, true);
-
-		CachedSquad = `XCOMHQ.Squad;
-		bRestoreCachedSquad = true;
-
-		`HQPRES.UISquadSelect();
-	}*/
 }
 
 simulated function OnReceiveFocus()
 {
-	// KDM REMOVE
-	//local XComGameState_HeadquartersXCom XComHQ;
-	//local XComGameState NewGameState;
-
 	// KDM : We are coming back from viewing a squad.
 	if (RestoreCachedSquad)
 	{
@@ -880,23 +843,6 @@ simulated function OnReceiveFocus()
 
 		class'Utilities'.static.SetSquad(CachedSquad);
 	}
-
-	// LWS : If you were in 'view mode', restore the previously selected squad.
-	/*if (bRestoreCachedSquad)
-	{
-		NewGameState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Restore previous soldiers to XComHQ Squad");
-		XComHQ = XComGameState_HeadquartersXCom(NewGameState.CreateStateObject(class'XComGameState_HeadquartersXCom', `XCOMHQ.ObjectID));
-		XComHQ.Squad = CachedSquad;
-		NewGameState.AddStateObject(XComHQ);
-		`GAMERULES.SubmitGameState(NewGameState);
-
-		bRestoreCachedSquad = false;
-		CachedSquad.Length = 0;
-
-		// KDM : IS THE CURRENT INDEX AND UI STILL OK? NEED TO TEST.
-		// CurrentSquadIndex = ((CurrentSquadIndex - 1) < 0) ? (GetTotalSquads() - 1) : CurrentSquadIndex - 1;
-		// UpdateAll(true, true);
-	}*/
 
 	super(UIScreen).OnReceiveFocus();
 	UpdateNavHelp();
@@ -1029,10 +975,6 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 		return false;
 	}
 
-	//`log("KDM **** :" @ self.Movie.GetPathUnderMouse());
-	//`log("KDM *** :" @ TempPanel.X @ TempPanel.Y @ TempPanel.Width @ TempPanel.Height);
-	//`log("KDM *** :" @ MC.GetNum("SoldierListBG._x") @ MC.GetNum("SoldierListBG._y") @ MC.GetNum("SoldierListBG._width") @ MC.GetNum("SoldierListBG._height"));
-	
 	bHandled = true;
 
 	// KDM : Right stick click toggles focus between the squad UI, on top, and the soldier UI, on the bottom.
@@ -1056,11 +998,15 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 			// KDM : Y button creates a squad.
 			case class'UIUtilities_Input'.const.FXS_BUTTON_Y:
 				CreateSquad();
+				// KDM : The 1st squad may have been created, so update the navigation help system.
+				UpdateNavHelp();
 				break;
 
 			// KDM : X button deletes the selected squad.
 			case class'UIUtilities_Input'.const.FXS_BUTTON_X:
 				DeleteSelectedSquad();
+				// KDM : The last squad may have been deleted, so update the navigation help system.
+				UpdateNavHelp();
 				break;
 
 			// KDM : Left bumper selects the previous squad.
