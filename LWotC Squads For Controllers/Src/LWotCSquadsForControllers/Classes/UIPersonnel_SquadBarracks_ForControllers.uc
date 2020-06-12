@@ -12,6 +12,9 @@ class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadS
 // 2. Update LWotc regarding detailed soldier list - getting rid of nav help button if controller is active while
 // UIPersonnel_SquadBarracks_ForControllers is on stack, I think - think about it
 // 4. If squad on a mission what can and can't happen ?
+// 5. Bio container flickers - probably hide until text realized
+// 6. Test temp icons for SquadClassItem - I don't even know what that is
+
 
 
 // KDM : I don't use bSelectSquad; however, it is referenced in LW2 files, so just leave it here and ignore it.
@@ -160,17 +163,17 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 
 	// KDM : List of icons representing soldiers in the squad.
 	XLoc = CurrentSquadStatus.X;
-	YLoc = CurrentSquadStatus.Y + 30;
+	YLoc = CurrentSquadStatus.Y + 32;
 	WidthVal = PanelW - SquadIconSize - (BorderPadding * 3);
-	HeightVal = 24;
+	HeightVal = 48;
 	SoldierIconList = Spawn(class'UIList', MainPanel);
 	SoldierIconList.InitList(, XLoc, YLoc, WidthVal, HeightVal, true);
 
 	// KDM : Current squad's biography.
 	XLoc = CurrentSquadStatus.X;
-	YLoc = SoldierIconList.Y + SoldierIconList.Height + 10;
+	YLoc = SoldierIconList.Y + SoldierIconList.Height - 5;
 	WidthVal = PanelW - SquadIconSize - (BorderPadding * 3);
-	HeightVal = 100;
+	HeightVal = 85;
 	CurrentSquadBio = Spawn(class'UITextContainer', MainPanel);
 	CurrentSquadBio.InitTextContainer(, "", XLoc, YLoc, WidthVal, HeightVal, false, , false);
 	CurrentSquadBio.SetText("Current Squad Bio");
@@ -179,7 +182,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 
 	// KDM : Squad soldiers tab.
 	XLoc = BorderPadding;
-	YLoc = SquadIconBG1.Y + SquadIconBG1.Height + 10;
+	YLoc = SquadIconBG1.Y + SquadIconBG1.Height + 14;
 	WidthVal = int(float(AvailableW) * 0.5);
 	SquadSoldiersTab = Spawn(class'UIButton', MainPanel);
 	SquadSoldiersTab.ResizeToText = false;
@@ -243,7 +246,7 @@ simulated function CreateSortableHeader()
 
 	// KDM : Create the header container.
 	XLoc = MainPanel.X + SquadSoldiersTab.X;
-	YLoc = MainPanel.Y + SquadSoldiersTab.Y + 35;
+	YLoc = MainPanel.Y + SquadSoldiersTab.Y + 37;
 	m_kSoldierSortHeader = Spawn(class'UIPanel', self);
 	m_kSoldierSortHeader.bIsNavigable = false;
 	m_kSoldierSortHeader.InitPanel('soldierSort', 'SoldierSortHeader');
@@ -459,7 +462,7 @@ simulated function UpdateSoldierClassIcons(XComGameState_LWPersistentSquad Curre
 {
 	local int i, StartIndex;
 	local array<XComGameState_Unit> SoldierStates;
-	local UISquadClassItem SoldierClassIcon;
+	local UISquadClassItem_ForControllers SoldierClassIcon;
 	local XComGameState_Unit SoldierState;
 	
 	SoldierStates = CurrentSquadState.GetSoldiers();
@@ -468,12 +471,11 @@ simulated function UpdateSoldierClassIcons(XComGameState_LWPersistentSquad Curre
 	for (i = 0; i < SoldierStates.Length; i++)
 	{
 		SoldierState = SoldierStates[i];
-		SoldierClassIcon = UISquadClassItem(SoldierIconList.GetItem(i));
+		SoldierClassIcon = UISquadClassItem_ForControllers(SoldierIconList.GetItem(i));
 		
 		if (SoldierClassIcon == none)
 		{
-			SoldierClassIcon = UISquadClassItem(SoldierIconList.CreateItem(class'UISquadClassItem'));
-			// KDM : The size is automatically set to 38 x 38.
+			SoldierClassIcon = UISquadClassItem_ForControllers(SoldierIconList.CreateItem(class'UISquadClassItem_ForControllers'));
 			SoldierClassIcon.InitSquadClassItem();
 		}
 
@@ -491,12 +493,11 @@ simulated function UpdateSoldierClassIcons(XComGameState_LWPersistentSquad Curre
 	for (i = StartIndex; i < StartIndex + SoldierStates.Length; i++)
 	{
 		SoldierState = SoldierStates[i - StartIndex];
-		SoldierClassIcon = UISquadClassItem(SoldierIconList.GetItem(i));
+		SoldierClassIcon = UISquadClassItem_ForControllers(SoldierIconList.GetItem(i));
 		
 		if (SoldierClassIcon == none)
 		{
-			SoldierClassIcon = UISquadClassItem(SoldierIconList.CreateItem(class'UISquadClassItem'));
-			// KDM : The size is automatically set to 38 x 38.
+			SoldierClassIcon = UISquadClassItem_ForControllers(SoldierIconList.CreateItem(class'UISquadClassItem_ForControllers'));
 			SoldierClassIcon.InitSquadClassItem();
 		}
 
@@ -514,7 +515,7 @@ simulated function UpdateSoldierClassIcons(XComGameState_LWPersistentSquad Curre
 	{
 		for (i = StartIndex; i < SoldierIconList.GetItemCount(); i++)
 		{
-			SoldierClassIcon = UISquadClassItem(SoldierIconList.GetItem(i));
+			SoldierClassIcon = UISquadClassItem_ForControllers(SoldierIconList.GetItem(i));
 			SoldierClassIcon.Hide();
 		}
 	}
@@ -1177,6 +1178,7 @@ simulated function OnSoldierSelected(UIList SquadList, int SelectedIndex)
 simulated function bool CanTransferSoldier(StateObjectReference SoldierRef, optional XComGameState_LWPersistentSquad CurrentSquadState)
 {
 	local int CurrentSquadSize, MaxSquadSize;
+	local array<XComGameState_Unit> CurrentSquadSoldiers;
 	local XComGameState_Unit CurrentSoldierState;
 	
 	CurrentSoldierState = XComGameState_Unit(`XCOMHISTORY.GetGameStateForObjectID(SoldierRef.ObjectID));
@@ -1204,7 +1206,8 @@ simulated function bool CanTransferSoldier(StateObjectReference SoldierRef, opti
 		}
 
 		// LW : You can't add soldiers to a max size squad.
-		CurrentSquadSize = CurrentSquadState.GetSoldiers().Length;
+		CurrentSquadSoldiers = CurrentSquadState.GetSoldiers();
+		CurrentSquadSize = CurrentSquadSoldiers.Length;
 		MaxSquadSize = class'XComGameState_LWSquadManager'.default.MAX_SQUAD_SIZE;
 		if (CurrentSquadSize >= MaxSquadSize)
 		{
