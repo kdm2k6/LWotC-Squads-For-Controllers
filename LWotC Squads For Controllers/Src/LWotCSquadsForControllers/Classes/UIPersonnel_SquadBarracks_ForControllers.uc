@@ -12,9 +12,10 @@ class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadS
 // 2. Update LWotc regarding detailed soldier list - getting rid of nav help button if controller is active while
 // UIPersonnel_SquadBarracks_ForControllers is on stack, I think - think about it
 // 4. If squad on a mission what can and can't happen ?
-// 5. Bio container flickers - probably hide until text realized
+
 // 6. Test temp icons for SquadClassItem - I don't even know what that is
-// I think when we change focus I want to navigate the SquadBio to the top if it has a scrollbar.
+// PROBABLY NOT WORTH THE EFFORT - ONLY FLICKERS A BIT WHEN GOING FROM NO SCROLLBAR TO SCROLLBAR - 5. Bio container flickers - probably hide until text realized
+// DONE - I think when we change focus I want to navigate the SquadBio to the top if it has a scrollbar.
 
 
 // KDM : I don't use bSelectSquad; however, it is referenced in LW2 files, so just leave it here and ignore it.
@@ -337,6 +338,7 @@ simulated function UpdateSquadUI()
 	ParamTag.StrValue0 = CurrentSquadState.sSquadBiography;
 	SquadBio = `XEXPAND.ExpandString(BiographyStr);
 	CurrentSquadBio.SetText(SquadBio);
+	ResetBiographyScroll();
 }
 
 simulated function UpdateListUI(optional bool _ResetTabFocus = false, optional bool _ResetSortType = true)
@@ -775,6 +777,13 @@ simulated function UpdateUIForFocus()
 	AvailableSoldiersTab.SetAlpha(BottomUIAlpha);
 	m_kSoldierSortHeader.SetAlpha(BottomUIAlpha);
 	m_kList.SetAlpha(BottomUIAlpha);
+
+	// KDM : If the squad UI is no longer active, and the biography text container has a scrollbar, scroll the 
+	// text container to the top.
+	if (SoldierUIFocused)
+	{
+		ResetBiographyScroll();
+	}
 }
 
 simulated function ToggleTabFocus()
@@ -1120,6 +1129,17 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 	}
 
 	return bHandled; 
+}
+
+simulated function ResetBiographyScroll()
+{
+	local UIScrollbar Scrollbar;
+
+	Scrollbar = CurrentSquadBio.scrollbar;
+	if (Scrollbar != none)
+	{
+		Scrollbar.SetThumbAtPercent(0.0);
+	}
 }
 
 simulated function OnSoldierSelected(UIList SquadList, int SelectedIndex)
