@@ -14,7 +14,7 @@ class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadS
 // 4. If squad on a mission what can and can't happen ?
 // 5. Bio container flickers - probably hide until text realized
 // 6. Test temp icons for SquadClassItem - I don't even know what that is
-
+// I think when we change focus I want to navigate the SquadBio to the top if it has a scrollbar.
 
 
 // KDM : I don't use bSelectSquad; however, it is referenced in LW2 files, so just leave it here and ignore it.
@@ -171,7 +171,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 
 	// KDM : Current squad's biography.
 	XLoc = CurrentSquadStatus.X;
-	YLoc = SoldierIconList.Y + SoldierIconList.Height - 5;
+	YLoc = SoldierIconList.Y + SoldierIconList.Height;
 	WidthVal = PanelW - SquadIconSize - (BorderPadding * 3);
 	HeightVal = 85;
 	CurrentSquadBio = Spawn(class'UITextContainer', MainPanel);
@@ -1155,7 +1155,7 @@ simulated function OnSoldierSelected(UIList SquadList, int SelectedIndex)
 
 	`XCOMGAME.GameRuleset.SubmitGameState(NewGameState);
 
-	// KDM : Normally I would just update the list UI; howver, the squad's soldier icon list also needs to be updated.
+	// KDM : Normally I would just update the list UI; however, the squad's soldier icon list also needs to be updated.
 	UpdateAll(false);
 	
 	// KDM : Attempt to keep the same item index selected for continuity.
