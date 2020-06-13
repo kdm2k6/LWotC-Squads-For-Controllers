@@ -11,11 +11,10 @@ class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadS
 // KDM TO DO :
 // 2. Update LWotc regarding detailed soldier list - getting rid of nav help button if controller is active while
 // UIPersonnel_SquadBarracks_ForControllers is on stack, I think - think about it
-// 4. If squad on a mission what can and can't happen ?
-
-// 6. Test temp icons for SquadClassItem - I don't even know what that is
-// PROBABLY NOT WORTH THE EFFORT - ONLY FLICKERS A BIT WHEN GOING FROM NO SCROLLBAR TO SCROLLBAR - 5. Bio container flickers - probably hide until text realized
-// DONE - I think when we change focus I want to navigate the SquadBio to the top if it has a scrollbar.
+// 3. NavHelp doesn't update "View Squad" and "Delete squad" when dealing with squads on mission - probably need
+// to update - also check conditions for when NavHelp should show up - for example, delete is based on some
+// LW onmission logic - probably put in a function. - maybe cache it so only updated when necessary.
+// include a parameter force, which forces update
 
 
 // KDM : I don't use bSelectSquad; however, it is referenced in LW2 files, so just leave it here and ignore it.
@@ -55,6 +54,8 @@ var UIScrollingText CurrentSquadStatus, CurrentSquadMissions;
 var UITextContainer CurrentSquadBio;
 var UIList SoldierIconList;
 var UIButton SquadSoldiersTab, AvailableSoldiersTab;
+
+var array<bool> CachedNav;
 
 simulated function OnInit()
 {
@@ -218,6 +219,8 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	SetUIFocus(false, true);
 	UpdateAll(true);
 
+	// KDM TO DO : SET CACHEDNAV LENGTH
+	// CachedNav.Length = ??
 	UpdateNavHelp();
 }
 
@@ -881,7 +884,57 @@ simulated function OnRemoved()
 	super.OnRemoved();
 }
 
-simulated function UpdateNavHelp()
+simulated function UpdateCachedNav()
+{
+	local bool ValidSquadWithSquadUIFocused, ValidSquadWithSoldierUIFocused;
+	local XComGameState_LWPersistentSquad CurrentSquadState;
+
+	CurrentSquadState = GetCurrentSquad();
+
+	ValidSquadWithSquadUIFocused = (CurrentSquadIsValid() && (!SoldierUIFocused)) ? true : false;
+	ValidSquadWithSoldierUIFocused = (CurrentSquadIsValid() && SoldierUIFocused) ? true : false;
+	CanDeleteSquad = (CurrentSquadIsValid() && 
+		(!(CurrentSquadState.bOnMission || (CurrentSquadState.CurrentMission.ObjectID > 0)))) ? true : false;
+
+	CachedNav[0] = true;															// KDM : Close screen with B button.
+	CachedNav[1] = (!SoldierUIFocused) ? true : false;								// KDM : Create squad with Y button.
+	CachedNav[2] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Scroll biography with right stick.
+	CachedNav[3] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Edit squad icon with left stick click.
+	CachedNav[4] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Edit squad biography with right trigger.
+	CachedNav[5] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Rename squad with left trigger.
+	CachedNav[6] = (CanDeleteSquad && (!SoldierUIFocused)) ? true : false;			// KDM : Delete squad with X button.
+	CachedNav[7] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Focus soldier UI with right stick click.
+	CachedNav[8] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Previous squad with left bumper.
+	CachedNav[9] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Next squad with right bumper.
+	CachedNav[10] = (CanViewCurrentSquad() && (!SoldierUIFocused)) ? true : false;	// KDM : View squad with select button.
+
+	CachedNav[11] = (ValidSquadWithSoldierUIFocused) ? true : false;				// KDM : Focus squad UI with right stick click.
+	CachedNav[12] = (ValidSquadWithSoldierUIFocused && 
+		DisplayingAvailableSoldiers) ? true : false;								// KDM : Show squad's soldiers.
+	CachedNav[13] = (ValidSquadWithSoldierUIFocused && 
+		(!DisplayingAvailableSoldiers)) ? true : false;								// KDM : Show available soldiers.
+	
+	CachedNav[14] = (ValidSquadWithSoldierUIFocused) ? true : false;				// KDM : Change columns with DPad
+	CachedNav[15] = (ValidSquadWithSoldierUIFocused) ? true : false;				// KDM : Toggle sort with X button
+
+	CachedNav[16] = (DetailsManagerExists() && ValidSquadWithSoldierUIFocused);		// KDM : Toggle list details.
+
+	/*
+	In ONUNREALCOMMAND
+	
+	ValidSquadWithSoldierUIFocused
+
+	depends on DisplayingAvailableSoldiers
+
+	Select Soldier - these must be false --> 
+	if (!CurrentSquadIsValid()) return;
+	if ((SelectedIndex < 0) || (SelectedIndex >= SquadList.ItemCount)) return;
+	if (UIPersonnel_ListItem(SquadList.GetItem(SelectedIndex)).IsDisabled) return;
+	if (!CanTransferSoldier(CurrentSoldierState.GetReference(), CurrentSquadState)) return;	
+	*/
+}
+
+simulated function UpdateNavHelp(optional bool ForceUpdate = false)
 {
 	local string NavString;
 	local UINavigationHelp NavHelp;
@@ -890,20 +943,18 @@ simulated function UpdateNavHelp()
 	
 	NavHelp.ClearButtonHelp();
 	NavHelp.bIsVerticalHelp = true;
+	NavHelp.AddBackButton();
 
 	if (!CurrentSquadIsValid())
 	{
 		// KDM : If the squad is not valid, the soldier UI shouldn't be able to gain focus.
 		if (!SoldierUIFocused)
 		{
-			NavHelp.AddBackButton();
 			NavHelp.AddLeftHelp(CreateSquadStr, class'UIUtilities_Input'.const.ICON_Y_TRIANGLE);
 		}
 	}
 	else
 	{
-		NavHelp.AddBackButton();
-
 		// KDM : If the squad UI is focussed.
 		if (!SoldierUIFocused)
 		{
@@ -1022,11 +1073,15 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 			// KDM : Left bumper selects the previous squad.
 			case class'UIUtilities_Input'.const.FXS_BUTTON_LBUMPER:
 				PrevSquad();
+				// KDM : A squad on a mission may have been selected, so update the navigation help system.
+				UpdateNavHelp();
 				break;
 
 			// KDM : Right bumper selects the next squad
 			case class'UIUtilities_Input'.const.FXS_BUTTON_RBUMPER:
 				NextSquad();
+				// KDM : A squad on a mission may have been selected, so update the navigation help system.
+				UpdateNavHelp();
 				break;
 
 			// KDM : Left stick click changes squad icon.
