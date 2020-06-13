@@ -11,10 +11,9 @@ class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadS
 // KDM TO DO :
 // 2. Update LWotc regarding detailed soldier list - getting rid of nav help button if controller is active while
 // UIPersonnel_SquadBarracks_ForControllers is on stack, I think - think about it
-// 3. NavHelp doesn't update "View Squad" and "Delete squad" when dealing with squads on mission - probably need
-// to update - also check conditions for when NavHelp should show up - for example, delete is based on some
-// LW onmission logic - probably put in a function. - maybe cache it so only updated when necessary.
-// include a parameter force, which forces update
+// 3. NavHelp - just do more testing
+// 4. It sets alpha to 30 if soldier is not on mission with squad - but it also does this is we are viewing available soldiers
+// THIS IS A LW BUG - 2 fixes - only change alpha if viewing actual squad - also don't make it 30 (too much) - maybe 75
 
 
 // KDM : I don't use bSelectSquad; however, it is referenced in LW2 files, so just leave it here and ignore it.
@@ -414,9 +413,12 @@ simulated function UpdateList()
 		SoldierListItem = UIPersonnel_ListItem(m_kList.GetItem(i));
 
 		// LW : If we are viewing a squad on a mission, mark units not on the mission with a lower alpha value.
-		if ((CurrentSquadState != none) && CurrentSquadState.IsDeployedOnMission() && (!CurrentSquadState.IsSoldierOnMission(SoldierListItem.UnitRef)))
+		// KDM : I have added a check so that only the 'squad soldiers list' is affected, while the 'available soldiers list' is unaffected.
+		// I have also changed the alpha from 30 to 50 since this can combine with an unfocused soldier UI, leading to near transparency.
+		if ((!DisplayingAvailableSoldiers) && (CurrentSquadState != none) && 
+			CurrentSquadState.IsDeployedOnMission() && (!CurrentSquadState.IsSoldierOnMission(SoldierListItem.UnitRef)))
 		{
-			SoldierListItem.SetAlpha(30);
+			SoldierListItem.SetAlpha(50);
 		}
 
 		if (!CanTransferSoldier(SoldierListItem.UnitRef))

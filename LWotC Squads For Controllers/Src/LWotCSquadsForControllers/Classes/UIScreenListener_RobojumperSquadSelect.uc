@@ -21,7 +21,7 @@ event OnInit(UIScreen Screen)
 	CurrentSquadIcon.SquadRef = `LWSQUADMGR.LaunchingMissionSquad;
 	CurrentSquadIcon.bAnimateOnInit = false;
 	CurrentSquadIcon.bIsNavigable = false;
-	// FROM LW2 : Create on a timer to avoid creation issues that arise when no pawn loading has occurred.
+	// LW : Create on a timer to avoid creation issues that arise when no pawn loading has occurred.
 	CurrentSquadIcon.DelayedInit(0.75f);
 }
 
@@ -32,7 +32,7 @@ simulated function bool OnRobojumperSquadSelectClick(UIScreen Screen, int cmd, i
 		return false;
 	}
 
-	// KDM : If we are viewing the Squad Select screen through : SquadBarracks --> View Current Squad, we only want
+	// KDM : If we are viewing the Squad Select screen through : SquadBarracks --> View current squad, we only want
 	// the user to be able to 1.] Select soldiers with the DPad 2.] Close the screen with the B buton.
 	if (class'Utilities'.static.StackHasSquadBarracksForControllers())
 	{
@@ -43,16 +43,17 @@ simulated function bool OnRobojumperSquadSelectClick(UIScreen Screen, int cmd, i
 			case class'UIUtilities_Input'.const.FXS_DPAD_DOWN:
 			case class'UIUtilities_Input'.const.FXS_DPAD_LEFT:
 			case class'UIUtilities_Input'.const.FXS_DPAD_RIGHT:
-				// KDM : Allow these buttons through.
+				// KDM : Allow DPad and B button inputs through.
 				return false;
 				break;
 
 			default:
+				// KDM : Make sure all other inputs are not allowed through.
 				return true;
 				break;
 		}
 	}
-	// KDM : If we are viewing the Squad Select screen normally, allow the user to open up the Squad Menu with left stick click.
+	// KDM : If we are viewing the Squad Select screen normally, allow the user to open the Squad Menu with left stick click.
 	else
 	{
 		// KDM : Left stick click opens up the Squad Menu.

@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------
 //	FILE:		UISquadIconSelectionScreen_ForControllers.uc
 //	AUTHOR:		Robojumper
-//	PURPOSE:	A slight modification to Robojumper's Squad Icon Selector mod.
+//	PURPOSE:	A slight modification of Robojumper's Squad Icon Selector mod.
 //----------------------------------------------------------------------------
 class UISquadIconSelectionScreen_ForControllers extends UIScreen config(SquadSettings);
 

@@ -80,7 +80,7 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 
 	NextY += 10;
 
-	// KDM : List container which will hold rows of buttons.
+	// KDM : List which will hold rows of UISquadMenu_ListItems.
 	List = Spawn(class'UIList', MainPanel);
 	List.bAnimateOnInit = false;
 	List.bIsNavigable = true;
@@ -174,7 +174,7 @@ function TitleStrSizeRealized()
 
 	// KDM : Position the left & right diagonals and set their widths.
 	// Unfortunately this requires a bit of hacking since the only way to get diagonals is to use empty UIX2PanelHeader's which
-	// 1.] don't expect to be empty 2.] have ActionScript padding built into them 3.] seem to display differently depending upon
+	// 1.] Don't expect to be empty 2.] Have ActionScript padding built into them 3.] Seem to display differently depending upon
 	// whether their 'supposed text' is to the left of the diagonals or right of the diagonals. Do the best we can, which is pretty good !
 	LeftDiagonals.SetPosition(BorderPadding, BorderPadding);
 	LeftDiagonals.SetHeaderWidth(DiagonalsWidth + 10, true);

@@ -85,7 +85,7 @@ static function SetSelectedIndexWithScroll(UIList TheList, int Index, optional b
 	}
 }
 
-// KDM : This is LW2 code from UISquadContainer.
+// KDM : Sets underlying squad data; this is LW2 code from UISquadContainer.
 static function SetSquad(optional StateObjectReference NewSquadRef)
 {
 	local StateObjectReference CurrentSquadRef;
