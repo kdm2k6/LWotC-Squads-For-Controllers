@@ -152,8 +152,83 @@ bRestoreCachedSquad
 CurrentSquadSelection
 	- UIScreenListener_SquadSelect_LW.OnSaveSquad is no longer called, because the save button is no longer created when a controller is active. DONE.
 	
+
+
+simulated function UpdateCachedNav()
+{
+	//local bool CanDeleteSquad;
+	local bool ValidSquadWithSquadUIFocused, ValidSquadWithSoldierUIFocused;
+	local XComGameState_LWPersistentSquad CurrentSquadState;
+	local XComGameState_Unit DummySoldierState;
+
+	CurrentSquadState = GetCurrentSquad();
+
+	ValidSquadWithSquadUIFocused = (CurrentSquadIsValid() && (!SoldierUIFocused)) ? true : false;
+	ValidSquadWithSoldierUIFocused = (CurrentSquadIsValid() && SoldierUIFocused) ? true : false;
+	//CanDeleteSquad = (CurrentSquadIsValid() && 
+	//	(!(CurrentSquadState.bOnMission || (CurrentSquadState.CurrentMission.ObjectID > 0)))) ? true : false;
+
+	CachedNav[0] = true;															// KDM : Close screen with B button.
+	CachedNav[1] = (!SoldierUIFocused) ? true : false;								// KDM : Create squad with Y button.
+	CachedNav[2] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Scroll biography with right stick.
+	CachedNav[3] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Edit squad icon with left stick click.
+	CachedNav[4] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Edit squad biography with right trigger.
+	CachedNav[5] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Rename squad with left trigger.
+	CachedNav[6] = (SelectedSquadIsDeletable() && (!SoldierUIFocused)) ? true : false;			// KDM : Delete squad with X button.
+	CachedNav[7] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Focus soldier UI with right stick click.
+	CachedNav[8] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Previous squad with left bumper.
+	CachedNav[9] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Next squad with right bumper.
+	CachedNav[10] = (CanViewCurrentSquad() && (!SoldierUIFocused)) ? true : false;	// KDM : View squad with select button.
+
+	CachedNav[11] = (ValidSquadWithSoldierUIFocused) ? true : false;				// KDM : Focus squad UI with right stick click.
+	CachedNav[12] = (ValidSquadWithSoldierUIFocused && 
+		DisplayingAvailableSoldiers) ? true : false;								// KDM : Show squad's soldiers.
+	CachedNav[13] = (ValidSquadWithSoldierUIFocused && 
+		(!DisplayingAvailableSoldiers)) ? true : false;								// KDM : Show available soldiers.
 	
-ALSO TO DO : 
-- Probably get rid of all navhelp and buttons (except for B - close screen) while viewing squad - nothing sticks anyways since you can't
-save anything
-- If from squadbarracks - probably select squad menu item which is active - same with squad management
+	CachedNav[14] = (ValidSquadWithSoldierUIFocused) ? true : false;				// KDM : Change columns with DPad
+	CachedNav[15] = (ValidSquadWithSoldierUIFocused) ? true : false;				// KDM : Toggle sort with X button
+
+	CachedNav[16] = (DetailsManagerExists() && ValidSquadWithSoldierUIFocused)
+		? true : false;																// KDM : Toggle list details.
+	
+	CachedNav[17] = (ValidSquadWithSoldierUIFocused && 
+		SelectedSoldierIsMoveable(m_kList, m_kList.selectedIndex, DummySoldierState) &&
+		DisplayingAvailableSoldiers) ? true : false;								// KDM : Transfer soldier to squad.
+	
+	CachedNav[18] = (ValidSquadWithSoldierUIFocused && 
+		SelectedSoldierIsMoveable(m_kList, m_kList.selectedIndex, DummySoldierState) &&
+		(!DisplayingAvailableSoldiers)) ? true : false;								// KDM : Remove soldier from squad.
+}
+
+//CachedNav[0] = true;															// KDM : Close screen with B button.
+//CachedNav[1] = (!SoldierUIFocused) ? true : false;								// KDM : Create squad with Y button.
+//CachedNav[2] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Scroll biography with right stick.
+//CachedNav[3] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Edit squad icon with left stick click.
+//CachedNav[4] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Edit squad biography with right trigger.
+//CachedNav[5] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Rename squad with left trigger.
+//CachedNav[6] = (SelectedSquadIsDeletable() && (!SoldierUIFocused)) ? true : false;			// KDM : Delete squad with X button.
+//CachedNav[7] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Focus soldier UI with right stick click.
+//CachedNav[8] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Previous squad with left bumper.
+//CachedNav[9] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Next squad with right bumper.
+//CachedNav[10] = (CanViewCurrentSquad() && (!SoldierUIFocused)) ? true : false;	// KDM : View squad with select button.
+
+//CachedNav[11] = (ValidSquadWithSoldierUIFocused) ? true : false;				// KDM : Focus squad UI with right stick click.
+//CachedNav[12] = (ValidSquadWithSoldierUIFocused && 
+//	DisplayingAvailableSoldiers) ? true : false;								// KDM : Show squad's soldiers.
+//CachedNav[13] = (ValidSquadWithSoldierUIFocused && 
+//	(!DisplayingAvailableSoldiers)) ? true : false;								// KDM : Show available soldiers.
+	
+//CachedNav[14] = (ValidSquadWithSoldierUIFocused) ? true : false;				// KDM : Change columns with DPad
+//CachedNav[15] = (ValidSquadWithSoldierUIFocused) ? true : false;				// KDM : Toggle sort with X button
+
+//CachedNav[16] = (DetailsManagerExists() && ValidSquadWithSoldierUIFocused)
+//	? true : false;																// KDM : Toggle list details.
+	
+//CachedNav[17] = (ValidSquadWithSoldierUIFocused && 
+//	SelectedSoldierIsMoveable(m_kList, m_kList.selectedIndex, DummySoldierState) &&
+//	DisplayingAvailableSoldiers) ? true : false;								// KDM : Transfer soldier to squad.
+	
+//CachedNav[18] = (ValidSquadWithSoldierUIFocused && 
+//	SelectedSoldierIsMoveable(m_kList, m_kList.selectedIndex, DummySoldierState) &&
+//	(!DisplayingAvailableSoldiers)) ? true : false;								// KDM : Remove soldier from squad.

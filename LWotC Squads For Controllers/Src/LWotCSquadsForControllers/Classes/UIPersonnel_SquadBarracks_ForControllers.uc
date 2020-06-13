@@ -55,7 +55,8 @@ var UITextContainer CurrentSquadBio;
 var UIList SoldierIconList;
 var UIButton SquadSoldiersTab, AvailableSoldiersTab;
 
-var array<bool> CachedNav;
+// KDM : Apparently UE3 hates boolean arrays, so we'll go with an int array instead.
+var int CachedNavHelp[8];
 
 simulated function OnInit()
 {
@@ -219,9 +220,18 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	SetUIFocus(false, true);
 	UpdateAll(true);
 
-	// KDM TO DO : SET CACHEDNAV LENGTH
-	// CachedNav.Length = ??
+	InitializeCachedNav();
 	UpdateNavHelp();
+}
+
+simulated function InitializeCachedNav()
+{
+	local int i;
+
+	for (i = 0; i < 8; i++)
+	{
+		CachedNavHelp[i] = -1;
+	}
 }
 
 simulated function SetInitialCurrentSquadIndex()
@@ -597,18 +607,34 @@ simulated function SetLWSelectedSquadRef(optional StateObjectReference SquadRef)
 	}
 }
 
-simulated function DeleteSelectedSquad()
+simulated function bool SelectedSquadIsDeletable()
 {
-	local TDialogueBoxData DialogData;
 	local XComGameState_LWPersistentSquad CurrentSquadState;
 	
-	if (!CurrentSquadIsValid()) return;
-
+	if (!CurrentSquadIsValid()) return false;
 	CurrentSquadState = GetCurrentSquad();
 
 	// LW : Don't delete a squad if it is on a mission.
-	if (!(CurrentSquadState.bOnMission || (CurrentSquadState.CurrentMission.ObjectID > 0)))
-	{
+	if (CurrentSquadState.bOnMission || (CurrentSquadState.CurrentMission.ObjectID > 0)) return false;
+
+	return true;
+}
+
+simulated function DeleteSelectedSquad()
+{
+	local TDialogueBoxData DialogData;
+	//local XComGameState_LWPersistentSquad CurrentSquadState;
+	
+	// KDM : Includes a check to see if the current squad is valid.
+	if (!SelectedSquadIsDeletable()) return;
+	// KDM REMOVE
+	//if (!CurrentSquadIsValid()) return;
+
+	//CurrentSquadState = GetCurrentSquad();
+
+	
+	//if (!(CurrentSquadState.bOnMission || (CurrentSquadState.CurrentMission.ObjectID > 0)))
+	//{
 		DialogData.eType = eDialog_Normal;
 		DialogData.strTitle = class'UIPersonnel_SquadBarracks'.default.strDeleteSquadConfirm;
 		DialogData.strText = class'UIPersonnel_SquadBarracks'.default.strDeleteSquadConfirmDesc;
@@ -616,7 +642,7 @@ simulated function DeleteSelectedSquad()
 		DialogData.strAccept = class'UIDialogueBox'.default.m_strDefaultAcceptLabel;
 		DialogData.strCancel = class'UIDialogueBox'.default.m_strDefaultCancelLabel;
 		Movie.Pres.UIRaiseDialog(DialogData);
-	}
+	//}
 }
 
 simulated function OnDeleteSelectedSquadCallback(Name eAction)
@@ -884,59 +910,67 @@ simulated function OnRemoved()
 	super.OnRemoved();
 }
 
-simulated function UpdateCachedNav()
+simulated function bool NavHelpHasChanged()
 {
-	local bool CanDeleteSquad, ValidSquadWithSquadUIFocused, ValidSquadWithSoldierUIFocused;
-	local XComGameState_LWPersistentSquad CurrentSquadState;
+	local bool NavHelpChanged, ValidSquadWithSquadUIFocused, ValidSquadWithSoldierUIFocused;
+	local int i, CurrentNavHelp[8];
 	local XComGameState_Unit DummySoldierState;
 
-	CurrentSquadState = GetCurrentSquad();
-
+	NavHelpChanged = false;
 	ValidSquadWithSquadUIFocused = (CurrentSquadIsValid() && (!SoldierUIFocused)) ? true : false;
 	ValidSquadWithSoldierUIFocused = (CurrentSquadIsValid() && SoldierUIFocused) ? true : false;
-	CanDeleteSquad = (CurrentSquadIsValid() && 
-		(!(CurrentSquadState.bOnMission || (CurrentSquadState.CurrentMission.ObjectID > 0)))) ? true : false;
 
-	CachedNav[0] = true;															// KDM : Close screen with B button.
-	CachedNav[1] = (!SoldierUIFocused) ? true : false;								// KDM : Create squad with Y button.
-	CachedNav[2] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Scroll biography with right stick.
-	CachedNav[3] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Edit squad icon with left stick click.
-	CachedNav[4] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Edit squad biography with right trigger.
-	CachedNav[5] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Rename squad with left trigger.
-	CachedNav[6] = (CanDeleteSquad && (!SoldierUIFocused)) ? true : false;			// KDM : Delete squad with X button.
-	CachedNav[7] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Focus soldier UI with right stick click.
-	CachedNav[8] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Previous squad with left bumper.
-	CachedNav[9] = (ValidSquadWithSquadUIFocused) ? true : false;					// KDM : Next squad with right bumper.
-	CachedNav[10] = (CanViewCurrentSquad() && (!SoldierUIFocused)) ? true : false;	// KDM : View squad with select button.
+	// KDM : 'Close screen' is automatically true and can be ignored.
+	// KDM : 'Create squad' is active as long as the squad UI has focus.
+	CurrentNavHelp[0] = (!SoldierUIFocused) ? 1 : -1;
+	// KDM : The following are active as long as the current squad is valid and the squad UI has focus :
+	// 1.] Previous squad 2.] Next squad 3.] Rename squad 4.] Edit squad biography 5.] Edit squad icon 6.] Scroll biography text 7.] Focus soldier UI.
+	CurrentNavHelp[1] = (ValidSquadWithSquadUIFocused) ? 1 : -1;
+	// KDM : The following are active as long as the current squad is valid and the soldier UI has focus :
+	// 1.] Change sort column 2.] Toggle sort 3.] Focus squad UI.
+	CurrentNavHelp[2] = (ValidSquadWithSoldierUIFocused) ? 1 : -1;
+	// KDM : 'Squad soldiers' and 'Available soldiers' tabs are potentially active as long as the current squad is valid and the soldier UI has focus.
+	// If DisplayingAvailableSoldiers is true, the 'Available soldiers' tab is active, else the 'Squad soldiers' tab is active.
+	CurrentNavHelp[3] = (ValidSquadWithSoldierUIFocused && DisplayingAvailableSoldiers) ? 1 : -1;
+	// KDM : 'Toggle list details' is active as long as :
+	// 1.] The details manager exists 2.] The current squad is valid 3.] The soldier UI has focus.
+	CurrentNavHelp[4] = (DetailsManagerExists() && ValidSquadWithSoldierUIFocused) ? 1 : -1;		
+	// KDM : 'View squad' is active as long as : 
+	// 1.] The current squad is valid 2.] The squad UI has focus 3.] You aren't coming through the Squad Menu 4.] The squad isn't on a mission.
+	CurrentNavHelp[5] = (CanViewCurrentSquad() && (!SoldierUIFocused)) ? 1 : -1;
+	// KDM : 'Delete squad' is active as long as :
+	// 1.] The current squad is valid 2.] The squad UI has focus 3.] The squad isn't on a mission.
+	CurrentNavHelp[6] = (SelectedSquadIsDeletable() && (!SoldierUIFocused)) ? 1 : -1;
+	// KDM : 'Transfer soldiers' is active as long as :
+	// 1.] The current squad is valid 2.] The selected list item is valid 3.] The soldier is not disabled 4.] The soldier is transferable 5.] The soldier UI has focus.
+	// If DisplayingAvailableSoldiers is true, you can 'Transfer to Squad', else you can 'Remove from Squad'.
+	CurrentNavHelp[7] = (SelectedSoldierIsMoveable(m_kList, m_kList.selectedIndex, DummySoldierState) && SoldierUIFocused && 
+		DisplayingAvailableSoldiers) ? 1 : -1;
 
-	CachedNav[11] = (ValidSquadWithSoldierUIFocused) ? true : false;				// KDM : Focus squad UI with right stick click.
-	CachedNav[12] = (ValidSquadWithSoldierUIFocused && 
-		DisplayingAvailableSoldiers) ? true : false;								// KDM : Show squad's soldiers.
-	CachedNav[13] = (ValidSquadWithSoldierUIFocused && 
-		(!DisplayingAvailableSoldiers)) ? true : false;								// KDM : Show available soldiers.
-	
-	CachedNav[14] = (ValidSquadWithSoldierUIFocused) ? true : false;				// KDM : Change columns with DPad
-	CachedNav[15] = (ValidSquadWithSoldierUIFocused) ? true : false;				// KDM : Toggle sort with X button
+	for (i = 0; i < 8; i++)
+	{
+		if (CachedNavHelp[i] != CurrentNavHelp[i])
+		{
+			// KDM : Don't break once we have found a change, since we want to update CachedNavHelp with all changes.
+			CachedNavHelp[i] = CurrentNavHelp[i];
+			NavHelpChanged = true;
+		}
+	}
 
-	CachedNav[16] = (DetailsManagerExists() && ValidSquadWithSoldierUIFocused)
-		? true : false;																// KDM : Toggle list details.
-	
-	CachedNav[17] = (ValidSquadWithSoldierUIFocused && 
-		SoldierCanMove(m_kList, m_kList.selectedIndex, DummySoldierState) &&
-		DisplayingAvailableSoldiers) ? true : false;								// KDM : Transfer soldier to squad.
-	
-	CachedNav[18] = (ValidSquadWithSoldierUIFocused && 
-		SoldierCanMove(m_kList, m_kList.selectedIndex, DummySoldierState) &&
-		(!DisplayingAvailableSoldiers)) ? true : false;								// KDM : Remove soldier from squad.
+	return NavHelpChanged;
 }
 
 simulated function UpdateNavHelp()
 {
 	local string NavString;
 	local UINavigationHelp NavHelp;
+	local XComGameState_Unit DummySoldierState;
 
 	NavHelp =`HQPRES.m_kAvengerHUD.NavHelp;
 	
+	// KDM : If the navigation help has not changed since last time return. This prevents unnecessary navigation flashing.
+	if (!NavHelpHasChanged()) return;
+
 	NavHelp.ClearButtonHelp();
 	NavHelp.bIsVerticalHelp = true;
 	NavHelp.AddBackButton();
@@ -951,14 +985,17 @@ simulated function UpdateNavHelp()
 	}
 	else
 	{
-		// KDM : If the squad UI is focussed.
+		// KDM : If the squad UI has focus.
 		if (!SoldierUIFocused)
 		{
 			NavHelp.AddLeftHelp(ScrollSquadBioStr, class'UIUtilities_Input'.const.ICON_RSTICK);
 			NavHelp.AddLeftHelp(ChangeSquadIconStr, class'UIUtilities_Input'.const.ICON_LSCLICK_L3);
 			NavHelp.AddLeftHelp(EditSquadBioStr, class'UIUtilities_Input'.const.ICON_RT_R2);
 			NavHelp.AddLeftHelp(RenameSquadStr, class'UIUtilities_Input'.const.ICON_LT_L2);
-			NavHelp.AddLeftHelp(DeleteSquadStr, class'UIUtilities_Input'.const.ICON_X_SQUARE);
+			if (SelectedSquadIsDeletable())
+			{
+				NavHelp.AddLeftHelp(DeleteSquadStr, class'UIUtilities_Input'.const.ICON_X_SQUARE);
+			}
 			NavHelp.AddLeftHelp(CreateSquadStr, class'UIUtilities_Input'.const.ICON_Y_TRIANGLE);
 			NavHelp.AddLeftHelp(FocusUISoldiersStr, class'UIUtilities_Input'.const.ICON_RSCLICK_R3);
 
@@ -972,11 +1009,14 @@ simulated function UpdateNavHelp()
 				NavHelp.AddRightHelp(ViewSquadStr, class'UIUtilities_Input'.const.ICON_BACK_SELECT);
 			}
 		}
-		// KDM : If the soldier UI is focussed.
+		// KDM : If the soldier UI has focus.
 		else
 		{
-			NavString = (DisplayingAvailableSoldiers) ? TransferToSquadStr : RemoveFromSquadStr;
-			NavHelp.AddLeftHelp(NavString, class'UIUtilities_Input'.const.ICON_A_X);
+			if (SelectedSoldierIsMoveable(m_kList, m_kList.selectedIndex, DummySoldierState))
+			{
+				NavString = (DisplayingAvailableSoldiers) ? TransferToSquadStr : RemoveFromSquadStr;
+				NavHelp.AddLeftHelp(NavString, class'UIUtilities_Input'.const.ICON_A_X);
+			}
 			NavHelp.AddLeftHelp(FocusUISquadStr, class'UIUtilities_Input'.const.ICON_RSCLICK_R3);
 			
 			NavHelp.AddCenterHelp(ViewSquadSoldiersStr, class'UIUtilities_Input'.const.ICON_LB_L1);
@@ -1193,7 +1233,7 @@ simulated function ResetBiographyScroll()
 	}
 }
 
-simulated function bool SoldierCanMove(UIList SquadList, int SelectedIndex, out XComGameState_Unit CurrentSoldierState)
+simulated function bool SelectedSoldierIsMoveable(UIList SquadList, int SelectedIndex, out XComGameState_Unit CurrentSoldierState)
 {
 	local UIPersonnel_ListItem SoldierListItem;
 	local XComGameState_LWPersistentSquad CurrentSquadState;
@@ -1220,7 +1260,7 @@ simulated function OnSoldierSelected(UIList SquadList, int SelectedIndex)
 	local XComGameState_Unit CurrentSoldierState;
 
 	// KDM : CurrentSoldierState is passed by reference since it is needed below.
-	if (!SoldierCanMove(SquadList, SelectedIndex, CurrentSoldierState)) return;
+	if (!SelectedSoldierIsMoveable(SquadList, SelectedIndex, CurrentSoldierState)) return;
 
 	// KDM REMOVE
 	//if (!CurrentSquadIsValid()) return;
