@@ -1,9 +1,17 @@
 ﻿#3 - I THINK THIS NEEDS TO BE AN || INSIDE BRACKETS - CHECK - 2 INSTANCES
-#5 - SHOULD BE ||
+#5 - SHOULD BE || - DOUBLE CHECK ACTUALLY
+#9 - SHOULD BE || - DOUBLE CHECK ACTUALLY
+#10 - THINK ABOUT && VS || - ACTUALLY I THINK IT'S GOOD HERE'
+#11 - CHECK IT BUT LOOKS GOOD
+
+****** I THINK WHEN DEALING WITH "NOT BEING ON STACK" NEED - && - 
+WHEN DEALING WITH BEING ON STACK NEED ||
 
 // ===================================================
-For proper integration with LWotC, I need to look for any situation in which UIPersonnel_SquadBarracks is dealt with.
-In particular, I need to be concerned with screen stack checks 'for' UIPersonnel_SquadBarracks.
+// =================== STEP 1 ========================
+// ===================================================
+For proper integration with LWotC, I need to look for any situation in which 'UIPersonnel_SquadBarracks' is dealt with.
+In particular, I need to be concerned with screen stack checks for 'UIPersonnel_SquadBarracks'.
  
 // ======================= 1 =========================
 FILE : UIPersonnel_SquadBarracks
@@ -37,7 +45,7 @@ STATUS : SOLVED
 // ======================= 5 =========================
 FILE : UIScreenListener_SquadSelect_LW
 FUNCTION : OnSquadManagerClicked()
-DESCRIPTION : Spawns a 'UIPersonnel_SquadBarracks' screen if 'UIPersonnel_SquadBarracks' is not already on the screen stack.
+DESCRIPTION : Spawns a 'UIPersonnel_SquadBarracks' screen if 'UIPersonnel_SquadBarracks' is not on the screen stack.
 SOLUTION : Spawning a 'UIPersonnel_SquadBarracks' also requires 'UIPersonnel_SquadBarracks_ForControllers' not be on the screen stack.
 NOTE : This function is never called.
 STATUS : SOLVED
@@ -45,87 +53,95 @@ STATUS : SOLVED
 // ======================= 6 =========================
 FILE : UIScreenListener_SquadSelect_LW
 FUNCTION : OnSaveSquad()
-DESCRIPTION : If bInSquadEdit is true, the launch button's click delegate calls OnSaveSquad(). When it is clicked, the screen
-stack is popped until Barracks, which is a UIPersonnel_SquadBarracks.
-SOLUTION : Depends on #4. Will definitely have to base it on OnUnrealCommand, instead of a button click though.
-Could probably put some code in UIScreenListener_RobojumperSquadSelect.OnRobojumperSquadSelectClick(); need to think about it.
-STATUS : TO DO
+SOLUTION : This functionality has been disabled, and the function is no longer called when a controller is active.
+STATUS : SOLVED
 
 // ======================= 7 =========================
 FILE : UISquadContainer
 FUNCTION : OnSquadManagerClicked()
-DESCRIPTION : When the squad container is clicked, a UIPersonnel_SquadBarracks is spawned with bSelectSquad set to true,
-and then pushed onto the stack.
-SOLUTION : When a controller is active make sure that UIScreenListener_SquadSelect_LW.OnInit() doesn't spawn a squad container.
-I might also want to add a menu item to the squad menu which sends you to the squad management screen, simulating this button press.
-STATUS : TO DO
+SOLUTION : UISquadContainers are no longer spawned when a controller is active; therefore, this function will never be called.
+STATUS : SOLVED
 
 // ======================= 8 =========================
 FILE : UISquadIconSelectionScreen
-DESCRIPTION : Makes use of BelowScreen, which is a screen of type UIPersonnel_SquadBarracks. Basically, same issue as #1.
-STATUS : SOLVED IN NEW CLASS "UISquadIconSelectionScreen_ForControllers".
+DESCRIPTION : BelowScreen is a screen of type 'UIPersonnel_SquadBarracks'.
+SOLUTION : My custom class, 'UISquadIconSelectionScreen_ForControllers' solves this issue; BelowScreen is now a screen of type 'UIPersonnel_SquadBarracks_ForControllers'.
+STATUS : SOLVED
 
 // ======================= 9 =========================
 FILE : X2EventListener_Soldiers
 FUNCTION : OnOverridePersonnelStatus()
-DESCRIPTION : The event OverridePersonnelStatus calls OnOverridePersonnelStatus(); however, this particular
-event is never triggered.
-STATUS : EVENT IS NEVER TRIGGERED - MIGHT WANT TO UPDATE IT ANYWAYS.
-
+DESCRIPTION : Enters an else-if statement if 'UIPersonnel_SquadBarracks' is not on the screen stack.
+SOLUTION : Entering the else-if statement also requires 'UIPersonnel_SquadBarracks_ForControllers' not be on the screen stack.
+NOTE : The event, OverridePersonnelStatus, which calls OnOverridePersonnelStatus() is never triggered.
+STATUS : SOLVED
 
 // ======================= 10 =========================
 FILE : XComGameState_LWSquadManager
 FUNCTION : GoToSquadManagement()
-DESCRIPTION : When the squad management avenger menu is clicked, if a UIPersonnel_SquadBarracks is not on the stack,
-one is spawned and pushed.
-STATUS : TO DO
+DESCRIPTION : Spawns a 'UIPersonnel_SquadBarracks' screen if 'UIPersonnel_SquadBarracks' is not on the screen stack.
+SOLUTION : Spawning a 'UIPersonnel_SquadBarracks' also requires 'UIPersonnel_SquadBarracks_ForControllers' not be on the screen stack.
+NOTE : This is called when the Squad Management Avenger menu button is clicked.
+STATUS : SOLVED
 
 // ======================= 11 =========================
 FILE : XComGameState_LWSquadManager
 FUNCTION : SetDisabledSquadListItems()
-DESCRIPTION : The event OnSoldierListItemUpdateDisabled(), which is called in UIScreenListener_PersonnelSquadSelect.FireEvents(),
-calls SetDisabledSquadListItems(). Within this function, bInSquadEdit is set according to whether or not a screen of type
-UIPersonnel_SquadBarracks is on the stack. It looks like it disables list items when bInSquadEdit is true.
-STATUS : TO DO
+DESCRIPTION : Sets bInSquadEdit to true if 'UIPersonnel_SquadBarracks' is on the screen stack, and false otherwise.
+SOLUTION: Also sets bInSquadEdit to true if a controller is active, and 'UIPersonnel_SquadBarracks_ForControllers' is on the screen stack.
+NOTE : The event OnSoldierListItemUpdateDisabled(), which is called in UIScreenListener_PersonnelSquadSelect.FireEvents(), calls SetDisabledSquadListItems(). 
+STATUS : SOLVED
 
 // ======================= 12 =========================
 FILE : XComGameState_LWSquadManager
 FUNCTION : ConfigureSquadOnEnterSquadSelect()
-DESCRIPTION : The event OnUpdateSquadSelectSoldiers calls ConfigureSquadOnEnterSquadSelect(); however, this particular
-event is never triggered.
-STATUS : EVENT IS NEVER TRIGGERED - MIGHT WANT TO UPDATE IT ANYWAYS.
+DESCRIPTION : Sets bInSquadEdit to true if 'UIPersonnel_SquadBarracks' is on the screen stack, and false otherwise.
+SOLUTION: Also sets bInSquadEdit to true if a controller is active, and 'UIPersonnel_SquadBarracks_ForControllers' is on the screen stack.
+NOTE : The event OnUpdateSquadSelectSoldiers calls ConfigureSquadOnEnterSquadSelect(); however, this event is never triggered.
+STATUS : SOLVED
 
 
 
-
-
-Go through the variables at the top of UIPersonnel_SquadBarracks and make sure they aren't referenced in other files; if they are, make sure the names sync up.
-// -----------------------------------------------------
+// ===================================================
+// =================== STEP 2 ========================
+// ===================================================
+Go through the variables at the top of UIPersonnel_SquadBarracks and make sure they aren't referenced in other files. If they are, make sure everything syncs up.
 
 VARIABLE : bHideSelect
 DESCRIPTION : It is never set anywhere; therefore it is always false and can be ignored.
-STATUS : NO MODIFICATION NEEDED.
+STATUS : SOLVED
 
 VARIABLE : bSelectSquad
-DESCRIPTION : It is set to "true" in UISquadContainer.OnSquadManagerClicked() and UIScreenListener_SquadSelect_LW.OnSquadManagerClicked().
-It is accessed 3 times within UIPersonnel_SquadBarracks : InitScreen(), UpdateSquadHeader(), and OnEditOrSelectClicked(). 
-STATUS : LOOK INTO IT.
+DESCRIPTION : I no longer make use of this variable; however, it is referenced elsewhere so I have left it in 'UIPersonnel_SquadBarracks_ForControllers'.
+STATUS : SOLVED
 
 VARIABLE : ExternalSelectedSquadRef
 DESCRIPTION : It is never set anywhere; therefore it is always false and can be ignored.
-STATUS : NO MODIFICATION NEEDED.
+STATUS : SOLVED
 
 VARIABLE : CachedSquad
-DESCRIPTION : It is dealt with in UIPersonnel_SquadBarracks : OnReceiveFocus(), and OnEditOrSelectClicked().
-STATUS : LOOK INTO IT.
+DESCRIPTION : It is dealt with in UIPersonnel_SquadBarracks : OnReceiveFocus(), and OnEditOrSelectClicked(). I now make use of it for my own purposes.
+STATUS : SOLVED
 
 VARIABLE : bRestoreCachedSquad
-DESCRIPTION : It is dealt with in UIPersonnel_SquadBarracks : OnReceiveFocus(), and OnEditOrSelectClicked().
-STATUS : LOOK INTO IT.
+DESCRIPTION : It is dealt with in UIPersonnel_SquadBarracks : OnReceiveFocus(), and OnEditOrSelectClicked(). I now make use of my own variable, RestoreCachedSquad.
+STATUS : SOLVED
 
 VARIABLE : CurrentSquadSelection
-DESCRIPTION : In addition to normal usage, it is dealt with in UIScreenListener_SquadSelect_LW.OnSaveSquad().
-STATUS : LOOK INTO IT.
+DESCRIPTION : In addition to normal usage in 'UIPersonnel_SquadBarracks', it is dealt with in UIScreenListener_SquadSelect_LW.OnSaveSquad().
+I now make use of my own variable, CurrentSquadIndex, within 'UIPersonnel_SquadBarracks_ForControllers'; furthermore, OnSaveSquad is never called when a controller is active.
+STATUS : SOLVED
+
+
+
+
+
+
+
+
+
+
+
 
 
 
