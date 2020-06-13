@@ -886,8 +886,9 @@ simulated function OnRemoved()
 
 simulated function UpdateCachedNav()
 {
-	local bool ValidSquadWithSquadUIFocused, ValidSquadWithSoldierUIFocused;
+	local bool CanDeleteSquad, ValidSquadWithSquadUIFocused, ValidSquadWithSoldierUIFocused;
 	local XComGameState_LWPersistentSquad CurrentSquadState;
+	local XComGameState_Unit DummySoldierState;
 
 	CurrentSquadState = GetCurrentSquad();
 
@@ -917,24 +918,19 @@ simulated function UpdateCachedNav()
 	CachedNav[14] = (ValidSquadWithSoldierUIFocused) ? true : false;				// KDM : Change columns with DPad
 	CachedNav[15] = (ValidSquadWithSoldierUIFocused) ? true : false;				// KDM : Toggle sort with X button
 
-	CachedNav[16] = (DetailsManagerExists() && ValidSquadWithSoldierUIFocused);		// KDM : Toggle list details.
-
-	/*
-	In ONUNREALCOMMAND
+	CachedNav[16] = (DetailsManagerExists() && ValidSquadWithSoldierUIFocused)
+		? true : false;																// KDM : Toggle list details.
 	
-	ValidSquadWithSoldierUIFocused
-
-	depends on DisplayingAvailableSoldiers
-
-	Select Soldier - these must be false --> 
-	if (!CurrentSquadIsValid()) return;
-	if ((SelectedIndex < 0) || (SelectedIndex >= SquadList.ItemCount)) return;
-	if (UIPersonnel_ListItem(SquadList.GetItem(SelectedIndex)).IsDisabled) return;
-	if (!CanTransferSoldier(CurrentSoldierState.GetReference(), CurrentSquadState)) return;	
-	*/
+	CachedNav[17] = (ValidSquadWithSoldierUIFocused && 
+		SoldierCanMove(m_kList, m_kList.selectedIndex, DummySoldierState) &&
+		DisplayingAvailableSoldiers) ? true : false;								// KDM : Transfer soldier to squad.
+	
+	CachedNav[18] = (ValidSquadWithSoldierUIFocused && 
+		SoldierCanMove(m_kList, m_kList.selectedIndex, DummySoldierState) &&
+		(!DisplayingAvailableSoldiers)) ? true : false;								// KDM : Remove soldier from squad.
 }
 
-simulated function UpdateNavHelp(optional bool ForceUpdate = false)
+simulated function UpdateNavHelp()
 {
 	local string NavString;
 	local UINavigationHelp NavHelp;
@@ -1197,23 +1193,45 @@ simulated function ResetBiographyScroll()
 	}
 }
 
-simulated function OnSoldierSelected(UIList SquadList, int SelectedIndex)
+simulated function bool SoldierCanMove(UIList SquadList, int SelectedIndex, out XComGameState_Unit CurrentSoldierState)
 {
-	local int SquadListSize;
 	local UIPersonnel_ListItem SoldierListItem;
-	local XComGameState NewGameState;
 	local XComGameState_LWPersistentSquad CurrentSquadState;
-	local XComGameState_Unit CurrentSoldierState;
 
-	if (!CurrentSquadIsValid()) return;
-	if ((SelectedIndex < 0) || (SelectedIndex >= SquadList.ItemCount)) return;
-	if (UIPersonnel_ListItem(SquadList.GetItem(SelectedIndex)).IsDisabled) return;
+	if (!CurrentSquadIsValid()) return false;
+	if ((SelectedIndex < 0) || (SelectedIndex >= SquadList.ItemCount)) return false;
+	if (UIPersonnel_ListItem(SquadList.GetItem(SelectedIndex)).IsDisabled) return false;
 
 	CurrentSquadState = GetCurrentSquad();
 	SoldierListItem = UIPersonnel_ListItem(SquadList.GetItem(SelectedIndex));
 	CurrentSoldierState = XComGameState_Unit(`XCOMHISTORY.GetGameStateForObjectID(SoldierListItem.UnitRef.ObjectID));
 	
-	if (!CanTransferSoldier(CurrentSoldierState.GetReference(), CurrentSquadState)) return;
+	if (!CanTransferSoldier(CurrentSoldierState.GetReference(), CurrentSquadState)) return false;
+
+	return true;
+}
+
+simulated function OnSoldierSelected(UIList SquadList, int SelectedIndex)
+{
+	local int SquadListSize;
+	// local UIPersonnel_ListItem SoldierListItem;
+	local XComGameState NewGameState;
+	local XComGameState_LWPersistentSquad CurrentSquadState;
+	local XComGameState_Unit CurrentSoldierState;
+
+	// KDM : CurrentSoldierState is passed by reference since it is needed below.
+	if (!SoldierCanMove(SquadList, SelectedIndex, CurrentSoldierState)) return;
+
+	// KDM REMOVE
+	//if (!CurrentSquadIsValid()) return;
+	//if ((SelectedIndex < 0) || (SelectedIndex >= SquadList.ItemCount)) return;
+	//if (UIPersonnel_ListItem(SquadList.GetItem(SelectedIndex)).IsDisabled) return;
+
+	// CurrentSquadState = GetCurrentSquad();
+	// SoldierListItem = UIPersonnel_ListItem(SquadList.GetItem(SelectedIndex));
+	// CurrentSoldierState = XComGameState_Unit(`XCOMHISTORY.GetGameStateForObjectID(SoldierListItem.UnitRef.ObjectID));
+	
+	// if (!CanTransferSoldier(CurrentSoldierState.GetReference(), CurrentSquadState)) return;
 
 	NewGameState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Transferring Soldier");
 	CurrentSquadState = XComGameState_LWPersistentSquad(NewGameState.CreateStateObject(class'XComGameState_LWPersistentSquad', CurrentSquadState.ObjectID));
