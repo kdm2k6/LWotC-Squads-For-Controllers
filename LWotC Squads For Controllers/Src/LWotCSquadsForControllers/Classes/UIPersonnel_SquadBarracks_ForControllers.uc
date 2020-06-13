@@ -11,7 +11,13 @@ class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadS
 // KDM TO DO :
 // 2. Update LWotc regarding detailed soldier list - getting rid of nav help button if controller is active while
 // UIPersonnel_SquadBarracks_ForControllers is on stack, I think - think about it
-// 3. NavHelp - just do more testing
+// ONE THING I HAVE NOTICED
+// 3.] TEST THIS NOW ----  You can make a bunch of squad management modification and I think end up with a squad on a mission being the kind of
+// LaunchingMission squad - its name is brought up even though its soldiers are not
+// I NEED TO VERIFY WHEN I SET THE SQUAD - AFTER SQUAD CREATION/DELETION - I DON"T SELECT SQUADS ON A MISSION
+// I THINK THAT IS TOTALLY THE ISSUES
+// ALSO ADD A COMMENT FOR VIEW SQUADS - I DEFINITELy DON'T WANT TO BE ABLE TO VIEW SQUADS ON MISSION BECAUSE ONCE AGAIN,
+// IT CALLS SETSQUAD(
 
 
 // KDM : I don't use bSelectSquad; however, it is referenced in LW2 files, so just leave it here and ignore it.
@@ -457,7 +463,9 @@ simulated function int GetClassIconAlphaStatus(XComGameState_Unit SoldierState, 
 	switch (SoldierState.GetStatus())
 	{
 		case eStatus_Active:
-			return (CurrentSquadState.bOnMission && CurrentSquadState.IsSoldierTemporary(SoldierState.GetReference())) ? 50 : 100;
+			// KDM REMOVE AFTER CHECK
+			//return (CurrentSquadState.bOnMission && CurrentSquadState.IsSoldierTemporary(SoldierState.GetReference())) ? 50 : 100;
+			return (SquadIsOnMission(CurrentSquadState) && CurrentSquadState.IsSoldierTemporary(SoldierState.GetReference())) ? 50 : 100;
 
 		case eStatus_OnMission:
 			return (`LWOUTPOSTMGR.IsUnitAHavenLiaison(SoldierState.GetReference())) ? 50 : 100;
@@ -595,16 +603,49 @@ simulated function CreateSquad()
 
 simulated function SetLWSelectedSquadRef(optional StateObjectReference SquadRef)
 {
+	local XComGameState_LWPersistentSquad SquadState;
+
 	// KDM : We have been given a valid squad reference, so select that squad.
 	if (SquadRef.ObjectID > 0)
 	{
 		class'Utilities_ForControllers'.static.SetSquad(SquadRef);
 	}
-	// KDM : We were not given a valid squad reference, however, squads exist, so select the 1st squad.
+	// KDM : We were not given a valid squad reference, however, squads exist, so select the 1st squad which isn't on a mission.
+	// If no such squad exists then just exit, else an on-mission squad will be active; this is 'not' something we want to happen !
 	else if (`LWSQUADMGR.Squads.Length > 0)
 	{
-		class'Utilities_ForControllers'.static.SetSquad(`LWSQUADMGR.GetSquad(0).GetReference());
+		SquadState = GetFirstAvailableSquad();
+		if (SquadState != none)
+		{
+			class'Utilities_ForControllers'.static.SetSquad(SquadState.GetReference());
+		}
+		// KDM REMOVE AFTER CHECK
+		//class'Utilities_ForControllers'.static.SetSquad(`LWSQUADMGR.GetSquad(0).GetReference());
 	}
+}
+
+// KDM : Gets the 1st squad which is not on a mission; if no such squad exists, returns none.
+function XComGameState_LWPersistentSquad GetFirstAvailableSquad()
+{
+	local int i;
+	local XComGameState_LWPersistentSquad SquadState;
+	
+	for (i = 0; i < `LWSQUADMGR.Squads.length; i++)
+	{
+		SquadState = `LWSQUADMGR.GetSquad(i);
+		// KDM : If we have found a squad which isn't on a mission then return it.
+		if (!SquadIsOnMission(SquadState))
+		{
+			return SquadState;
+		}
+	}
+	
+	return none;
+}
+
+function bool SquadIsOnMission(XComGameState_LWPersistentSquad SquadState)
+{
+	return (SquadState.bOnMission || (SquadState.CurrentMission.ObjectID > 0));
 }
 
 simulated function bool SelectedSquadIsDeletable()
@@ -615,7 +656,9 @@ simulated function bool SelectedSquadIsDeletable()
 	CurrentSquadState = GetCurrentSquad();
 
 	// LW : Don't delete a squad if it is on a mission.
-	if (CurrentSquadState.bOnMission || (CurrentSquadState.CurrentMission.ObjectID > 0)) return false;
+	// KDM REMOVE
+	//if (CurrentSquadState.bOnMission || (CurrentSquadState.CurrentMission.ObjectID > 0)) return false;
+	if (SquadIsOnMission(CurrentSquadState)) return false;
 
 	return true;
 }
@@ -854,7 +897,9 @@ simulated function bool CanViewCurrentSquad()
 	if (SquadSelectScreen != none) return false;
 	// KDM : LW logic doesn't allow squad viewing if the squad is on a mission; this is a good idea, as I don't want to
 	// make an on-mission squad temporarily active. 
-	if (GetCurrentSquad().bOnMission) return false;
+	// KDM REMOVE AFTER CHECK
+	//if (GetCurrentSquad().bOnMission) return false;
+	if (SquadIsOnMission(GetCurrentSquad())) return false;
 
 	return true;
 }
@@ -1348,7 +1393,9 @@ simulated function bool CanTransferSoldier(StateObjectReference SoldierRef, opti
 	if (CurrentSquadState != none)
 	{
 		// LW : You can't add soldiers to squads that are on a mission.
-		if(CurrentSquadState.bOnMission || CurrentSquadState.CurrentMission.ObjectID > 0)
+		// KDM : REMOVE
+		//if(CurrentSquadState.bOnMission || CurrentSquadState.CurrentMission.ObjectID > 0)
+		if (SquadIsOnMission(CurrentSquadState))
 		{
 			if (DisplayingAvailableSoldiers)
 			{
