@@ -884,6 +884,7 @@ simulated function OnReceiveFocus()
 	}
 
 	super(UIScreen).OnReceiveFocus();
+	InitializeCachedNav();
 	UpdateNavHelp();
 }
 
@@ -913,8 +914,11 @@ simulated function OnRemoved()
 simulated function bool NavHelpHasChanged()
 {
 	local bool NavHelpChanged, ValidSquadWithSquadUIFocused, ValidSquadWithSoldierUIFocused;
-	local int i, CurrentNavHelp[8];
+	local int i, FalseVal, TrueVal, CurrentNavHelp[8];
 	local XComGameState_Unit DummySoldierState;
+
+	FalseVal = 0;
+	TrueVal = 1;
 
 	NavHelpChanged = false;
 	ValidSquadWithSquadUIFocused = (CurrentSquadIsValid() && (!SoldierUIFocused)) ? true : false;
@@ -922,30 +926,30 @@ simulated function bool NavHelpHasChanged()
 
 	// KDM : 'Close screen' is automatically true and can be ignored.
 	// KDM : 'Create squad' is active as long as the squad UI has focus.
-	CurrentNavHelp[0] = (!SoldierUIFocused) ? 1 : -1;
+	CurrentNavHelp[0] = (!SoldierUIFocused) ? TrueVal : FalseVal;
 	// KDM : The following are active as long as the current squad is valid and the squad UI has focus :
 	// 1.] Previous squad 2.] Next squad 3.] Rename squad 4.] Edit squad biography 5.] Edit squad icon 6.] Scroll biography text 7.] Focus soldier UI.
-	CurrentNavHelp[1] = (ValidSquadWithSquadUIFocused) ? 1 : -1;
+	CurrentNavHelp[1] = (ValidSquadWithSquadUIFocused) ? TrueVal : FalseVal;
 	// KDM : The following are active as long as the current squad is valid and the soldier UI has focus :
 	// 1.] Change sort column 2.] Toggle sort 3.] Focus squad UI.
-	CurrentNavHelp[2] = (ValidSquadWithSoldierUIFocused) ? 1 : -1;
+	CurrentNavHelp[2] = (ValidSquadWithSoldierUIFocused) ? TrueVal : FalseVal;
 	// KDM : 'Squad soldiers' and 'Available soldiers' tabs are potentially active as long as the current squad is valid and the soldier UI has focus.
 	// If DisplayingAvailableSoldiers is true, the 'Available soldiers' tab is active, else the 'Squad soldiers' tab is active.
-	CurrentNavHelp[3] = (ValidSquadWithSoldierUIFocused && DisplayingAvailableSoldiers) ? 1 : -1;
+	CurrentNavHelp[3] = (ValidSquadWithSoldierUIFocused && DisplayingAvailableSoldiers) ? TrueVal : FalseVal;
 	// KDM : 'Toggle list details' is active as long as :
 	// 1.] The details manager exists 2.] The current squad is valid 3.] The soldier UI has focus.
-	CurrentNavHelp[4] = (DetailsManagerExists() && ValidSquadWithSoldierUIFocused) ? 1 : -1;		
+	CurrentNavHelp[4] = (DetailsManagerExists() && ValidSquadWithSoldierUIFocused) ? TrueVal : FalseVal;		
 	// KDM : 'View squad' is active as long as : 
 	// 1.] The current squad is valid 2.] The squad UI has focus 3.] You aren't coming through the Squad Menu 4.] The squad isn't on a mission.
-	CurrentNavHelp[5] = (CanViewCurrentSquad() && (!SoldierUIFocused)) ? 1 : -1;
+	CurrentNavHelp[5] = (CanViewCurrentSquad() && (!SoldierUIFocused)) ? TrueVal : FalseVal;
 	// KDM : 'Delete squad' is active as long as :
 	// 1.] The current squad is valid 2.] The squad UI has focus 3.] The squad isn't on a mission.
-	CurrentNavHelp[6] = (SelectedSquadIsDeletable() && (!SoldierUIFocused)) ? 1 : -1;
+	CurrentNavHelp[6] = (SelectedSquadIsDeletable() && (!SoldierUIFocused)) ? TrueVal : FalseVal;
 	// KDM : 'Transfer soldiers' is active as long as :
 	// 1.] The current squad is valid 2.] The selected list item is valid 3.] The soldier is not disabled 4.] The soldier is transferable 5.] The soldier UI has focus.
 	// If DisplayingAvailableSoldiers is true, you can 'Transfer to Squad', else you can 'Remove from Squad'.
 	CurrentNavHelp[7] = (SelectedSoldierIsMoveable(m_kList, m_kList.selectedIndex, DummySoldierState) && SoldierUIFocused && 
-		DisplayingAvailableSoldiers) ? 1 : -1;
+		DisplayingAvailableSoldiers) ? TrueVal : FalseVal;
 
 	for (i = 0; i < 8; i++)
 	{
@@ -1202,11 +1206,15 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 		{
 			m_bFlipSort = !m_bFlipSort;
 			UpdateListUI(false, false);
+			// KDM : A new soldier could have been selected so update the navigation help system.
+			UpdateNavHelp();
 		}
 		// KDM : A button transfers a soldier to/from a squad, if possible.
 		else if (cmd == class'UIUtilities_Input'.static.GetAdvanceButtonInputCode())
 		{
 			OnSoldierSelected(m_kList, m_kList.selectedIndex);
+			// KDM : A new soldier will have been selected so update the navigation help system.
+			UpdateNavHelp();
 		}
 		// KDM : Right trigger toggles the soldier list details.
 		else if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_RTRIGGER)
@@ -1216,6 +1224,12 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 		else
 		{
 			bHandled = m_kList.OnUnrealCommand(cmd, arg);
+			if (bHandled)
+			{
+				// KDM : The list handled the input so, in all likelihood, a new soldier was selected; therefore,
+				// update the navigation help system.
+				UpdateNavHelp();
+			}
 		}
 	}
 
@@ -1261,6 +1275,10 @@ simulated function OnSoldierSelected(UIList SquadList, int SelectedIndex)
 
 	// KDM : CurrentSoldierState is passed by reference since it is needed below.
 	if (!SelectedSoldierIsMoveable(SquadList, SelectedIndex, CurrentSoldierState)) return;
+
+	CurrentSquadState = GetCurrentSquad();
+	//`log("GOT BELOW IN ONSOLDIERSELECTED WITH VALUE : " @ CurrentSoldierState);
+
 
 	// KDM REMOVE
 	//if (!CurrentSquadIsValid()) return;
