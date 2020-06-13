@@ -36,7 +36,7 @@ static function EventListenerReturn OnUISquadSelect_NavHelpUpdate(Object EventDa
 	
 	// KDM : We have reached the Squad Select screen through : SquadBarracks --> View current squad.
 	// In this case, we only allow the user to select soldiers with the DPad and exit the screen with the B button.
-	if (class'Utilities'.static.StackHasSquadBarracksForControllers())
+	if (class'Utilities_ForControllers'.static.StackHasSquadBarracksForControllers())
 	{
 		NavHelp.ClearButtonHelp();
 		NavHelp.AddBackButton();

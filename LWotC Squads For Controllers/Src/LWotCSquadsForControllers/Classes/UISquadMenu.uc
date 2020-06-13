@@ -143,10 +143,10 @@ simulated function UpdateSelection(optional bool UseCachedIndex = false)
 	// KDM : Select the squad currently visible in the Squad Select screen.
 	else
 	{
-		Index = class'Utilities'.static.ListIndexWithSquadReference(List, `LWSQUADMGR.LaunchingMissionSquad);
+		Index = class'Utilities_ForControllers'.static.ListIndexWithSquadReference(List, `LWSQUADMGR.LaunchingMissionSquad);
 	}
 	
-	class'Utilities'.static.SetSelectedIndexWithScroll(List, Index, true);
+	class'Utilities_ForControllers'.static.SetSelectedIndexWithScroll(List, Index, true);
 }
 
 simulated function PopulateList()
@@ -187,10 +187,10 @@ simulated function OnSquadSelected(StateObjectReference SelectedSquadRef)
 	local robojumper_UISquadSelect SquadSelectScreen;
 	local UISquadMenu_ListItem CurrentSquadIcon;
 	
-	SquadSelectScreen = class'Utilities'.static.GetRobojumpersSquadSelectFromStack();
+	SquadSelectScreen = class'Utilities_ForControllers'.static.GetRobojumpersSquadSelectFromStack();
 	
 	// KDM : Update the underlying LW squad data.
-	class'Utilities'.static.SetSquad(SelectedSquadRef);
+	class'Utilities_ForControllers'.static.SetSquad(SelectedSquadRef);
 
 	// KDM : Update the current squad icon on the Squad Select screen.
 	CurrentSquadIcon = UISquadMenu_ListItem(SquadSelectScreen.GetChildByName('CurrentSquadIconForController', false));
@@ -230,7 +230,7 @@ simulated function CloseScreen()
 {
 	local robojumper_UISquadSelect SquadSelectScreen;
 	
-	SquadSelectScreen = class'Utilities'.static.GetRobojumpersSquadSelectFromStack();
+	SquadSelectScreen = class'Utilities_ForControllers'.static.GetRobojumpersSquadSelectFromStack();
 	
 	if (SquadSelectScreen != none)
 	{

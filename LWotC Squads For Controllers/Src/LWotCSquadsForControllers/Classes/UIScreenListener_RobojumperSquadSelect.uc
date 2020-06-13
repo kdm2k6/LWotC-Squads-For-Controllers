@@ -34,7 +34,7 @@ simulated function bool OnRobojumperSquadSelectClick(UIScreen Screen, int cmd, i
 
 	// KDM : If we are viewing the Squad Select screen through : SquadBarracks --> View current squad, we only want
 	// the user to be able to 1.] Select soldiers with the DPad 2.] Close the screen with the B buton.
-	if (class'Utilities'.static.StackHasSquadBarracksForControllers())
+	if (class'Utilities_ForControllers'.static.StackHasSquadBarracksForControllers())
 	{
 		switch(cmd)
 		{

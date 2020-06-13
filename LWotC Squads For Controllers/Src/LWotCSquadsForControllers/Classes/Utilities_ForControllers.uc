@@ -1,9 +1,9 @@
 //----------------------------------------------------------------------------
-//	FILE:		Utilities.uc
+//	FILE:		Utilities_ForControllers.uc
 //	AUTHOR:		Keith (kdm2k6)
 //	PURPOSE:	Miscellaneous helper utilities. 
 //----------------------------------------------------------------------------
-class Utilities extends object;
+class Utilities_ForControllers extends object;
 
 static function bool StackHasRobojumpersSquadSelect()
 {

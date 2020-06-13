@@ -12,8 +12,6 @@ class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadS
 // 2. Update LWotc regarding detailed soldier list - getting rid of nav help button if controller is active while
 // UIPersonnel_SquadBarracks_ForControllers is on stack, I think - think about it
 // 3. NavHelp - just do more testing
-// 4. It sets alpha to 30 if soldier is not on mission with squad - but it also does this is we are viewing available soldiers
-// THIS IS A LW BUG - 2 fixes - only change alpha if viewing actual squad - also don't make it 30 (too much) - maybe 75
 
 
 // KDM : I don't use bSelectSquad; however, it is referenced in LW2 files, so just leave it here and ignore it.
@@ -237,7 +235,7 @@ simulated function SetInitialCurrentSquadIndex()
 {
 	local UISquadMenu SquadMenu;
 
-	SquadMenu = class'Utilities'.static.GetUISquadMenuFromStack();
+	SquadMenu = class'Utilities_ForControllers'.static.GetUISquadMenuFromStack();
 
 	// KDM : We are entering the SquadBarracks through : Squad Select --> Squad Menu.
 	// In this case, select the squad which was last highlighted in the Squad Menu.	
@@ -600,12 +598,12 @@ simulated function SetLWSelectedSquadRef(optional StateObjectReference SquadRef)
 	// KDM : We have been given a valid squad reference, so select that squad.
 	if (SquadRef.ObjectID > 0)
 	{
-		class'Utilities'.static.SetSquad(SquadRef);
+		class'Utilities_ForControllers'.static.SetSquad(SquadRef);
 	}
 	// KDM : We were not given a valid squad reference, however, squads exist, so select the 1st squad.
 	else if (`LWSQUADMGR.Squads.Length > 0)
 	{
-		class'Utilities'.static.SetSquad(`LWSQUADMGR.GetSquad(0).GetReference());
+		class'Utilities_ForControllers'.static.SetSquad(`LWSQUADMGR.GetSquad(0).GetReference());
 	}
 }
 
@@ -849,7 +847,7 @@ simulated function bool CanViewCurrentSquad()
 {
 	local robojumper_UISquadSelect SquadSelectScreen;
 
-	SquadSelectScreen = class'Utilities'.static.GetRobojumpersSquadSelectFromStack();
+	SquadSelectScreen = class'Utilities_ForControllers'.static.GetRobojumpersSquadSelectFromStack();
 	
 	if (!CurrentSquadIsValid()) return false;
 	// KDM : Don't allow squad viewing when coming through : Squad Select --> Squad Menu.
@@ -870,7 +868,7 @@ simulated function ViewCurrentSquad()
 	RestoreCachedSquad = true;
 
 	// KDM : Set the selected squad as the mission squad, so we can temporarily view it.
-	class'Utilities'.static.SetSquad(GetCurrentSquad().GetReference());
+	class'Utilities_ForControllers'.static.SetSquad(GetCurrentSquad().GetReference());
 	
 	`HQPRES.UISquadSelect();
 }
@@ -882,7 +880,7 @@ simulated function OnReceiveFocus()
 	{
 		RestoreCachedSquad = false;
 
-		class'Utilities'.static.SetSquad(CachedSquad);
+		class'Utilities_ForControllers'.static.SetSquad(CachedSquad);
 	}
 
 	super(UIScreen).OnReceiveFocus();
@@ -901,7 +899,7 @@ simulated function OnRemoved()
 {
 	local UISquadMenu SquadMenu;
 
-	SquadMenu = class'Utilities'.static.GetUISquadMenuFromStack();
+	SquadMenu = class'Utilities_ForControllers'.static.GetUISquadMenuFromStack();
 	
 	// KDM : We are exiting the SquadBarracks and heading back to the Squad Menu.
 	// Save the index of the squad we were looking at, so it can be selected when the Squad Menu receives focus.
