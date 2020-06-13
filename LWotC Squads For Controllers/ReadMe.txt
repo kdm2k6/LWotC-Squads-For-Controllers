@@ -1,42 +1,46 @@
-﻿// ===================================================
-I need to look for all cases where UIPersonnel_SquadBarracks is dealt with; specifically where the screen stack looks for an instance of it.
+﻿#3 - I THINK THIS NEEDS TO BE AN || INSIDE BRACKETS - CHECK - 2 INSTANCES
+#5 - SHOULD BE ||
 
+// ===================================================
+For proper integration with LWotC, I need to look for any situation in which UIPersonnel_SquadBarracks is dealt with.
+In particular, I need to be concerned with screen stack checks 'for' UIPersonnel_SquadBarracks.
+ 
 // ======================= 1 =========================
 FILE : UIPersonnel_SquadBarracks
 FUNCTION : OnSquadIconClicked()
-DESCRIPTION : BelowScreen is set to a screen of type UIPersonnel_SquadBarracks.
-SOLUTION : UIPersonnel_SquadBarracks_ForControllers.EditSquadIcon sets BelowScreen to itself.
-STATUS : SOLVED IN NEW CLASS "UIPersonnel_SquadBarracks_ForControllers".
+DESCRIPTION : BelowScreen is set to a screen of type 'UIPersonnel_SquadBarracks'.
+SOLUTION : My custom class, 'UIPersonnel_SquadBarracks_ForControllers' sets BelowScreen to itself, within EditSquadIcon().
+STATUS : SOLVED
 
 // ======================= 2 =========================
 FILE : UIScreenListener_LivingQuarters
-SOLUTION : It is deprecated and no longer used.
-STATUS : SOLVED SINCE CLASS IS DEPRECATED.
+SOLUTION : This class is deprecated and no longer used.
+STATUS : SOLVED
 
 // ======================= 3 =========================
 FILE : UIScreenListener_LWOfficerPack
 FUNCTION : CheckOfficerMissionStatus()
-DESCRIPTION : The event OverrideGetPersonnelStatusSeparate calls CheckOfficerMissionStatus(); however, this particular
-event is never triggered.
-STATUS : EVENT IS NEVER TRIGGERED - MIGHT WANT TO UPDATE IT ANYWAYS.
+DESCRIPTION : The event OverrideGetPersonnelStatusSeparate calls CheckOfficerMissionStatus() which returns ELR_NoInterrupt if :
+	1.] You are not in the Squad Select screen 2.] 'UIPersonnel_SquadBarracks' is not on the screen stack.
+SOLUTION : I now also make sure :
+	1.] 'UIPersonnel_SquadBarracks_ForControllers' is not on the screen stack, if a controller is active.
+NOTE : Although I solved this problem, this particular event is never actually triggered.
+STATUS : SOLVED
 
 // ======================= 4 =========================
 FILE : UIScreenListener_SquadSelect_LW
 FUNCTION : OnInit()
-DESCRIPTION : When in a UISquadSelect screen, sets bInSquadEdit to the value of `SCREENSTACK.IsInStack(class'UIPersonnel_SquadBarracks').
-This determines what type of information will and will not be displayed on the UISquadSelect screen.
-SOLUTION :
-- 1.] Create a new LWotC function, IsNamedClassInStack(name), making use of Object's "final function bool IsA(name ClassName)".
-If the controller is not active, perform the normal code; if the controller is active, do a search using my new code.
-I might be able to make use of X2EventListener_Soldiers.GetScreenOrChild(name ScreenType).
-- 2.] Within LWotC code, return immediately if a controller is active. Then add a screen listener in this mod which does
-basically the same thing.
-STATUS : TO DO
+DESCRIPTION : Sets bInSquadEdit to true if 'UIPersonnel_SquadBarracks' is on the screen stack, and false otherwise.
+SOLUTION: Also sets bInSquadEdit to true if a controller is active, and 'UIPersonnel_SquadBarracks_ForControllers' is on the screen stack.
+STATUS : SOLVED
 
 // ======================= 5 =========================
 FILE : UIScreenListener_SquadSelect_LW
 FUNCTION : OnSquadManagerClicked()
-STATUS : FUNCTION NEVER CALLED - MIGHT WANT TO UPDATE IT ANYWAYS
+DESCRIPTION : Spawns a 'UIPersonnel_SquadBarracks' screen if 'UIPersonnel_SquadBarracks' is not already on the screen stack.
+SOLUTION : Spawning a 'UIPersonnel_SquadBarracks' also requires 'UIPersonnel_SquadBarracks_ForControllers' not be on the screen stack.
+NOTE : This function is never called.
+STATUS : SOLVED
 
 // ======================= 6 =========================
 FILE : UIScreenListener_SquadSelect_LW
@@ -153,6 +157,9 @@ CurrentSquadSelection
 	- UIScreenListener_SquadSelect_LW.OnSaveSquad is no longer called, because the save button is no longer created when a controller is active. DONE.
 	
 
+
+
+// TO DELETE BELOW
 
 simulated function UpdateCachedNav()
 {
