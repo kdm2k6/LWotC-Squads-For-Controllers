@@ -11,13 +11,10 @@ class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadS
 // KDM TO DO :
 // 2. Update LWotc regarding detailed soldier list - getting rid of nav help button if controller is active while
 // UIPersonnel_SquadBarracks_ForControllers is on stack, I think - think about it
-// ONE THING I HAVE NOTICED
-// 3.] TEST THIS NOW ----  You can make a bunch of squad management modification and I think end up with a squad on a mission being the kind of
-// LaunchingMission squad - its name is brought up even though its soldiers are not
-// I NEED TO VERIFY WHEN I SET THE SQUAD - AFTER SQUAD CREATION/DELETION - I DON"T SELECT SQUADS ON A MISSION
-// I THINK THAT IS TOTALLY THE ISSUES
-// ALSO ADD A COMMENT FOR VIEW SQUADS - I DEFINITELy DON'T WANT TO BE ABLE TO VIEW SQUADS ON MISSION BECAUSE ONCE AGAIN,
-// IT CALLS SETSQUAD(
+// ALSO GO THROUGH README FILE AND CHECK BOOLEAN COMPARISONS
+//
+// 3 - REMOVE UNNECESSARY COMMENTED OUT CODE
+
 
 
 // KDM : I don't use bSelectSquad; however, it is referenced in LW2 files, so just leave it here and ignore it.
@@ -418,11 +415,11 @@ simulated function UpdateList()
 
 		// LW : If we are viewing a squad on a mission, mark units not on the mission with a lower alpha value.
 		// KDM : I have added a check so that only the 'squad soldiers list' is affected, while the 'available soldiers list' is unaffected.
-		// I have also changed the alpha from 30 to 50 since this can combine with an unfocused soldier UI, leading to near transparency.
+		// I have also changed the alpha from 30 to 40 since this can combine with an unfocused soldier UI, and become a bit too transparent.
 		if ((!DisplayingAvailableSoldiers) && (CurrentSquadState != none) && 
 			CurrentSquadState.IsDeployedOnMission() && (!CurrentSquadState.IsSoldierOnMission(SoldierListItem.UnitRef)))
 		{
-			SoldierListItem.SetAlpha(50);
+			SoldierListItem.SetAlpha(40);
 		}
 
 		if (!CanTransferSoldier(SoldierListItem.UnitRef))
@@ -895,7 +892,7 @@ simulated function bool CanViewCurrentSquad()
 	if (!CurrentSquadIsValid()) return false;
 	// KDM : Don't allow squad viewing when coming through : Squad Select --> Squad Menu.
 	if (SquadSelectScreen != none) return false;
-	// KDM : LW logic doesn't allow squad viewing if the squad is on a mission; this is a good idea, as I don't want to
+	// KDM : LW logic doesn't allow squad viewing if the squad is on a mission; this is a 'very good' idea, as I don't want to
 	// make an on-mission squad temporarily active. 
 	// KDM REMOVE AFTER CHECK
 	//if (GetCurrentSquad().bOnMission) return false;
