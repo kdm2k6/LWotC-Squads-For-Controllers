@@ -5,19 +5,10 @@
 //----------------------------------------------------------------------------
 class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadSettings);
 
-// KDM NOTES :
-// Turn off autofill squads for RJ squad select or else empty LW squads will be filled out with individuals.
+// KDM CHECK FROM HERE - DO THIS UNTIL ONUNREALCOMMAND
+//********************************************
 
-// KDM TO DO :
-// 2. Update LWotc regarding detailed soldier list - getting rid of nav help button if controller is active while
-// UIPersonnel_SquadBarracks_ForControllers is on stack, I think - think about it
-// ALSO GO THROUGH README FILE AND CHECK BOOLEAN COMPARISONS
-//
-// 3 - REMOVE UNNECESSARY COMMENTED OUT CODE
-
-
-
-// KDM : I don't use bSelectSquad; however, it is referenced in LW2 files, so just leave it here and ignore it.
+// KDM : I don't use bSelectSquad; however, it is referenced in LW files, so just leave it here and ignore it.
 var bool bSelectSquad;
 
 var StateObjectReference CachedSquad;
@@ -224,36 +215,6 @@ simulated function InitScreen(XComPlayerController InitController, UIMovie InitM
 	UpdateNavHelp();
 }
 
-simulated function InitializeCachedNav()
-{
-	local int i;
-
-	for (i = 0; i < 8; i++)
-	{
-		CachedNavHelp[i] = -1;
-	}
-}
-
-simulated function SetInitialCurrentSquadIndex()
-{
-	local UISquadMenu SquadMenu;
-
-	SquadMenu = class'Utilities_ForControllers'.static.GetUISquadMenuFromStack();
-
-	// KDM : We are entering the SquadBarracks through : Squad Select --> Squad Menu.
-	// In this case, select the squad which was last highlighted in the Squad Menu.	
-	if (SquadMenu != none)
-	{
-		CurrentSquadIndex = (SquadsExist()) ? SquadMenu.List.SelectedIndex : -1;
-	}
-	// KDM : We are entering the SquadBarracks through the 'Squad Management' Avenger tab.
-	// In this case, select the 1st squad.
-	else
-	{
-		CurrentSquadIndex = (SquadsExist()) ? 0 : -1;
-	}
-}
-
 simulated function CreateSortableHeader()
 {
 	local int XLoc, YLoc;
@@ -280,6 +241,7 @@ simulated function UpdateAll(optional bool _ResetTabFocus = false, optional bool
 	UpdateListUI(_ResetTabFocus, _ResetSortType);
 }
 
+// KDM : Updates the UI elements near the top of the screen; those concerned with general 'squad' attributes.
 simulated function UpdateSquadUI()
 {
 	local int TextState;
@@ -335,7 +297,7 @@ simulated function UpdateSquadUI()
 	SquadStatus = class'UIUtilities_Text'.static.GetSizedText(SquadStatus, 24);
 	CurrentSquadStatus.SetHTMLText(SquadStatus);
 	
-	// KDM : Set the squad's mission count; it will be of the form 'Missions : 1'.
+	// KDM : Set the squad's mission count, which is of the form 'Missions : 1'.
 	ParamTag = XGParamTag(`XEXPANDCONTEXT.FindTag("XGParam"));
 	ParamTag.IntValue0 = CurrentSquadState.iNumMissions;
 	SquadMissions = `XEXPAND.ExpandString(MissionsStr);
@@ -354,6 +316,7 @@ simulated function UpdateSquadUI()
 	ResetBiographyScroll();
 }
 
+// KDM : Updates the UI elements near the bottom of the screen; those concerned with a squad's soldiers.
 simulated function UpdateListUI(optional bool _ResetTabFocus = false, optional bool _ResetSortType = true)
 {
 	if (_ResetTabFocus) ResetTabFocus();
@@ -364,20 +327,6 @@ simulated function UpdateListUI(optional bool _ResetTabFocus = false, optional b
 	UpdateList();
 
 	UpdateListSelection();
-}
-
-simulated function ResetTabFocus()
-{
-	// KDM : By default, the squad's soldiers tab has focus.
-	SetTabFocus(false, true);
-}
-
-simulated function ResetSortType()
-{
-	// KDM : By default, sort the list in rank-descending order.
-	m_iSortTypeOrderIndex = 0;
-	m_eSortType = ePersonnelSoldierSortType_Rank;
-	m_bFlipSort = false;
 }
 
 simulated function UpdateListData()
@@ -414,8 +363,8 @@ simulated function UpdateList()
 		SoldierListItem = UIPersonnel_ListItem(m_kList.GetItem(i));
 
 		// LW : If we are viewing a squad on a mission, mark units not on the mission with a lower alpha value.
-		// KDM : I have added a check so that only the 'squad soldiers list' is affected, while the 'available soldiers list' is unaffected.
-		// I have also changed the alpha from 30 to 40 since this can combine with an unfocused soldier UI, and become a bit too transparent.
+		// KDM : I have added a check so that only 'squad soldiers' are affected; 'available soldiers' are now unaffected.
+		// I have also changed the alpha from 30 to 40 since this can combine with an unfocused soldier UI, and become difficult to see.
 		if ((!DisplayingAvailableSoldiers) && (CurrentSquadState != none) && 
 			CurrentSquadState.IsDeployedOnMission() && (!CurrentSquadState.IsSoldierOnMission(SoldierListItem.UnitRef)))
 		{
@@ -460,8 +409,6 @@ simulated function int GetClassIconAlphaStatus(XComGameState_Unit SoldierState, 
 	switch (SoldierState.GetStatus())
 	{
 		case eStatus_Active:
-			// KDM REMOVE AFTER CHECK
-			//return (CurrentSquadState.bOnMission && CurrentSquadState.IsSoldierTemporary(SoldierState.GetReference())) ? 50 : 100;
 			return (SquadIsOnMission(CurrentSquadState) && CurrentSquadState.IsSoldierTemporary(SoldierState.GetReference())) ? 50 : 100;
 
 		case eStatus_OnMission:
@@ -487,7 +434,7 @@ simulated function UpdateSoldierClassIcons(XComGameState_LWPersistentSquad Curre
 	
 	SoldierStates = CurrentSquadState.GetSoldiers();
 	
-	// LWS : Add permanent soldier icons.
+	// LW : Add permanent soldier icons.
 	for (i = 0; i < SoldierStates.Length; i++)
 	{
 		SoldierState = SoldierStates[i];
@@ -500,7 +447,7 @@ simulated function UpdateSoldierClassIcons(XComGameState_LWPersistentSquad Curre
 		}
 
 		SoldierClassIcon.LoadClassImage(SoldierState.GetSoldierClassTemplate().IconImage);
-		// LWS : Dim unavailable soldiers.
+		// LW : Dim unavailable soldiers.
 		SoldierClassIcon.SetAlpha(GetClassIconAlphaStatus(SoldierState, CurrentSquadState));
 		SoldierClassIcon.ShowTempIcon(false);
 		SoldierClassIcon.Show();
@@ -509,7 +456,7 @@ simulated function UpdateSoldierClassIcons(XComGameState_LWPersistentSquad Curre
 	StartIndex = i;
 	SoldierStates = CurrentSquadState.GetTempSoldiers();
 	
-	// LWS : Add temporary soldier icons.
+	// LW : Add temporary soldier icons.
 	for (i = StartIndex; i < StartIndex + SoldierStates.Length; i++)
 	{
 		SoldierState = SoldierStates[i - StartIndex];
@@ -522,7 +469,7 @@ simulated function UpdateSoldierClassIcons(XComGameState_LWPersistentSquad Curre
 		}
 
 		SoldierClassIcon.LoadClassImage(SoldierState.GetSoldierClassTemplate().IconImage);
-		// LWS : Dim unavailable soldiers
+		// LW : Dim unavailable soldiers
 		SoldierClassIcon.SetAlpha(GetClassIconAlphaStatus(SoldierState, CurrentSquadState));
 		SoldierClassIcon.ShowTempIcon(true);
 		SoldierClassIcon.Show();
@@ -530,7 +477,7 @@ simulated function UpdateSoldierClassIcons(XComGameState_LWPersistentSquad Curre
 
 	StartIndex = i;
 
-	// LWS : Hide additional icons.
+	// LW : Hide additional icons.
 	if (SoldierIconList.GetItemCount() > StartIndex)								
 	{
 		for (i = StartIndex; i < SoldierIconList.GetItemCount(); i++)
@@ -539,31 +486,6 @@ simulated function UpdateSoldierClassIcons(XComGameState_LWPersistentSquad Curre
 			SoldierClassIcon.Hide();
 		}
 	}
-}
-
-simulated function XComGameState_LWPersistentSquad GetCurrentSquad()
-{
-	local StateObjectReference CurrentSquadRef;
-	
-	if (CurrentSquadIndex < 0) return none;
-	
-	CurrentSquadRef = `LWSQUADMGR.Squads[CurrentSquadIndex];
-	return XComGameState_LWPersistentSquad(`XCOMHISTORY.GetGameStateForObjectID(CurrentSquadRef.ObjectID));
-}
-
-simulated function bool SquadsExist()
-{
-	return (GetTotalSquads() == 0) ? false : true;
-}
-
-simulated function bool CurrentSquadIsValid()
-{
-	return (SquadsExist() && (CurrentSquadIndex >= 0) && (CurrentSquadIndex < GetTotalSquads()));
-}
-
-simulated function int GetTotalSquads()
-{
-	return `LWSQUADMGR.Squads.Length;
 }
 
 simulated function NextSquad()
@@ -595,94 +517,23 @@ simulated function CreateSquad()
 	UpdateAll(true);
 
 	// KDM : A squad has been added so LW's underlying squad data is messed up and needs to be refreshed.
-	SetLWSelectedSquadRef();
-}
-
-simulated function SetLWSelectedSquadRef(optional StateObjectReference SquadRef)
-{
-	local XComGameState_LWPersistentSquad SquadState;
-
-	// KDM : We have been given a valid squad reference, so select that squad.
-	if (SquadRef.ObjectID > 0)
-	{
-		class'Utilities_ForControllers'.static.SetSquad(SquadRef);
-	}
-	// KDM : We were not given a valid squad reference, however, squads exist, so select the 1st squad which isn't on a mission.
-	// If no such squad exists then just exit, else an on-mission squad will be active; this is 'not' something we want to happen !
-	else if (`LWSQUADMGR.Squads.Length > 0)
-	{
-		SquadState = GetFirstAvailableSquad();
-		if (SquadState != none)
-		{
-			class'Utilities_ForControllers'.static.SetSquad(SquadState.GetReference());
-		}
-		// KDM REMOVE AFTER CHECK
-		//class'Utilities_ForControllers'.static.SetSquad(`LWSQUADMGR.GetSquad(0).GetReference());
-	}
-}
-
-// KDM : Gets the 1st squad which is not on a mission; if no such squad exists, returns none.
-function XComGameState_LWPersistentSquad GetFirstAvailableSquad()
-{
-	local int i;
-	local XComGameState_LWPersistentSquad SquadState;
-	
-	for (i = 0; i < `LWSQUADMGR.Squads.length; i++)
-	{
-		SquadState = `LWSQUADMGR.GetSquad(i);
-		// KDM : If we have found a squad which isn't on a mission then return it.
-		if (!SquadIsOnMission(SquadState))
-		{
-			return SquadState;
-		}
-	}
-	
-	return none;
-}
-
-function bool SquadIsOnMission(XComGameState_LWPersistentSquad SquadState)
-{
-	return (SquadState.bOnMission || (SquadState.CurrentMission.ObjectID > 0));
-}
-
-simulated function bool SelectedSquadIsDeletable()
-{
-	local XComGameState_LWPersistentSquad CurrentSquadState;
-	
-	if (!CurrentSquadIsValid()) return false;
-	CurrentSquadState = GetCurrentSquad();
-
-	// LW : Don't delete a squad if it is on a mission.
-	// KDM REMOVE
-	//if (CurrentSquadState.bOnMission || (CurrentSquadState.CurrentMission.ObjectID > 0)) return false;
-	if (SquadIsOnMission(CurrentSquadState)) return false;
-
-	return true;
+	SetSelectedSquadRef();
 }
 
 simulated function DeleteSelectedSquad()
 {
 	local TDialogueBoxData DialogData;
-	//local XComGameState_LWPersistentSquad CurrentSquadState;
 	
 	// KDM : Includes a check to see if the current squad is valid.
 	if (!SelectedSquadIsDeletable()) return;
-	// KDM REMOVE
-	//if (!CurrentSquadIsValid()) return;
-
-	//CurrentSquadState = GetCurrentSquad();
-
 	
-	//if (!(CurrentSquadState.bOnMission || (CurrentSquadState.CurrentMission.ObjectID > 0)))
-	//{
-		DialogData.eType = eDialog_Normal;
-		DialogData.strTitle = class'UIPersonnel_SquadBarracks'.default.strDeleteSquadConfirm;
-		DialogData.strText = class'UIPersonnel_SquadBarracks'.default.strDeleteSquadConfirmDesc;
-		DialogData.fnCallback = OnDeleteSelectedSquadCallback;
-		DialogData.strAccept = class'UIDialogueBox'.default.m_strDefaultAcceptLabel;
-		DialogData.strCancel = class'UIDialogueBox'.default.m_strDefaultCancelLabel;
-		Movie.Pres.UIRaiseDialog(DialogData);
-	//}
+	DialogData.eType = eDialog_Normal;
+	DialogData.strTitle = class'UIPersonnel_SquadBarracks'.default.strDeleteSquadConfirm;
+	DialogData.strText = class'UIPersonnel_SquadBarracks'.default.strDeleteSquadConfirmDesc;
+	DialogData.fnCallback = OnDeleteSelectedSquadCallback;
+	DialogData.strAccept = class'UIDialogueBox'.default.m_strDefaultAcceptLabel;
+	DialogData.strCancel = class'UIDialogueBox'.default.m_strDefaultCancelLabel;
+	Movie.Pres.UIRaiseDialog(DialogData);
 }
 
 simulated function OnDeleteSelectedSquadCallback(Name eAction)
@@ -699,10 +550,11 @@ simulated function OnDeleteSelectedSquadCallback(Name eAction)
 		
 		TotalSquads = GetTotalSquads();
 		
-		// KDM : We have 3 possible conditions here :
-		// 1.] If there are no longer any squads, set CurrentSquadIndex to -1.
-		// 2.] If CurrentSquadIndex is equal to the number of squads, we must have deleted the last squad; therefore, select the 'new' last squad.
-		// 3.] Neither condition 1 nor 2 are true; therefore, we can select the squad next to the deleted squad by leaving CurrentSquadIndex unchanged.
+		// KDM : There are 3 possible scenarios :
+		// 1.] We deleted the last remaining squad, so no squads exist; in this case, set CurrentSquadIndex to -1.
+		// 2.] We deleted the last squad in the list, but squads still exist; in this case, select the 'new' last squad.
+		// 3.] Neither 1 nor 2 are true; therefore, select the squad which is adjacent, list-wise, to the deleted squad.
+		//	   This is accomplished by leaving CurrentSquadIndex unmodified. 
 		if (TotalSquads == 0)
 		{
 			CurrentSquadIndex = -1;
@@ -715,7 +567,7 @@ simulated function OnDeleteSelectedSquadCallback(Name eAction)
 		UpdateAll(true);
 
 		// KDM : A squad has been deleted so LW's underlying squad data is messed up and needs to be refreshed.
-		SetLWSelectedSquadRef();
+		SetSelectedSquadRef();
 	}
 }
 
@@ -785,7 +637,6 @@ function OnEditBiographyInputBoxClosed(string NewSquadBio)
 	}
 }
 
-// LWotC: Integrated from Robojumper's Better Squad Icon Selector.
 function EditSquadIcon()
 {
 	local UISquadIconSelectionScreen_ForControllers IconSelectionScreen;
@@ -796,7 +647,7 @@ function EditSquadIcon()
 
 	HQPres = `HQPRES;
 
-	if (HQPres != none && HQPres.ScreenStack.IsNotInStack(class'UISquadIconSelectionScreen_ForControllers'))
+	if ((HQPres != none) && HQPres.ScreenStack.IsNotInStack(class'UISquadIconSelectionScreen_ForControllers'))
 	{
 		IconSelectionScreen = HQPres.Spawn(class'UISquadIconSelectionScreen_ForControllers', HQPres);
 		IconSelectionScreen.BelowScreen = self;
@@ -805,26 +656,7 @@ function EditSquadIcon()
 	}
 }
 
-simulated function ToggleUIFocus()
-{
-	SetUIFocus(!SoldierUIFocused);
-}
-
-simulated function SetUIFocus(bool NewUIFocus, optional bool Forced = false)
-{
-	if (Forced || (SoldierUIFocused != NewUIFocus))
-	{
-		SoldierUIFocused = NewUIFocus;
-		UpdateUIForFocus();
-	}
-}
-
-simulated function ResetUIFocus()
-{
-	// KDM : By default, the squad UI has focus.
-	SetUIFocus(false, true);
-}
-
+// KDM : If the squad UI has focus, fade the soldier UI. Likewise, if the soldier UI has focus, fade the squad UI.
 simulated function UpdateUIForFocus()
 {
 	local int FocusAlpha, UnfocusAlpha, TopUIAlpha, BottomUIAlpha;
@@ -847,25 +679,10 @@ simulated function UpdateUIForFocus()
 	m_kSoldierSortHeader.SetAlpha(BottomUIAlpha);
 	m_kList.SetAlpha(BottomUIAlpha);
 
-	// KDM : If the squad UI is no longer active, and the biography text container has a scrollbar, scroll the 
-	// text container to the top.
+	// KDM : If the squad UI is no longer active, and the biography text container has a scrollbar, scroll the text container to the top.
 	if (SoldierUIFocused)
 	{
 		ResetBiographyScroll();
-	}
-}
-
-simulated function ToggleTabFocus()
-{
-	SetTabFocus(!DisplayingAvailableSoldiers);
-}
-
-simulated function SetTabFocus(bool NewTabFocus, optional bool Forced = false)
-{
-	if (Forced || (DisplayingAvailableSoldiers != NewTabFocus))
-	{
-		DisplayingAvailableSoldiers = NewTabFocus;
-		UpdateTabsForFocus();
 	}
 }
 
@@ -894,8 +711,6 @@ simulated function bool CanViewCurrentSquad()
 	if (SquadSelectScreen != none) return false;
 	// KDM : LW logic doesn't allow squad viewing if the squad is on a mission; this is a 'very good' idea, as I don't want to
 	// make an on-mission squad temporarily active. 
-	// KDM REMOVE AFTER CHECK
-	//if (GetCurrentSquad().bOnMission) return false;
 	if (SquadIsOnMission(GetCurrentSquad())) return false;
 
 	return true;
@@ -905,11 +720,11 @@ simulated function ViewCurrentSquad()
 {
 	if (!CanViewCurrentSquad()) return;
 
-	// KDM : Store the current mission squad.
+	// KDM : Cache the mission squad so we can retrieve it later.
 	CachedSquad = `LWSQUADMGR.LaunchingMissionSquad;
 	RestoreCachedSquad = true;
 
-	// KDM : Set the selected squad as the mission squad, so we can temporarily view it.
+	// KDM : Set the current squad as the mission squad so we can temporarily view it.
 	class'Utilities_ForControllers'.static.SetSquad(GetCurrentSquad().GetReference());
 	
 	`HQPRES.UISquadSelect();
@@ -917,7 +732,7 @@ simulated function ViewCurrentSquad()
 
 simulated function OnReceiveFocus()
 {
-	// KDM : We are coming back from viewing a squad.
+	// KDM : If we are coming back from viewing a squad, restore the mission squad.
 	if (RestoreCachedSquad)
 	{
 		RestoreCachedSquad = false;
@@ -953,133 +768,10 @@ simulated function OnRemoved()
 	super.OnRemoved();
 }
 
-simulated function bool NavHelpHasChanged()
-{
-	local bool NavHelpChanged, ValidSquadWithSquadUIFocused, ValidSquadWithSoldierUIFocused;
-	local int i, FalseVal, TrueVal, CurrentNavHelp[8];
-	local XComGameState_Unit DummySoldierState;
 
-	FalseVal = 0;
-	TrueVal = 1;
 
-	NavHelpChanged = false;
-	ValidSquadWithSquadUIFocused = (CurrentSquadIsValid() && (!SoldierUIFocused)) ? true : false;
-	ValidSquadWithSoldierUIFocused = (CurrentSquadIsValid() && SoldierUIFocused) ? true : false;
+// KDM CHECK FROM HERE
 
-	// KDM : 'Close screen' is automatically true and can be ignored.
-	// KDM : 'Create squad' is active as long as the squad UI has focus.
-	CurrentNavHelp[0] = (!SoldierUIFocused) ? TrueVal : FalseVal;
-	// KDM : The following are active as long as the current squad is valid and the squad UI has focus :
-	// 1.] Previous squad 2.] Next squad 3.] Rename squad 4.] Edit squad biography 5.] Edit squad icon 6.] Scroll biography text 7.] Focus soldier UI.
-	CurrentNavHelp[1] = (ValidSquadWithSquadUIFocused) ? TrueVal : FalseVal;
-	// KDM : The following are active as long as the current squad is valid and the soldier UI has focus :
-	// 1.] Change sort column 2.] Toggle sort 3.] Focus squad UI.
-	CurrentNavHelp[2] = (ValidSquadWithSoldierUIFocused) ? TrueVal : FalseVal;
-	// KDM : 'Squad soldiers' and 'Available soldiers' tabs are potentially active as long as the current squad is valid and the soldier UI has focus.
-	// If DisplayingAvailableSoldiers is true, the 'Available soldiers' tab is active, else the 'Squad soldiers' tab is active.
-	CurrentNavHelp[3] = (ValidSquadWithSoldierUIFocused && DisplayingAvailableSoldiers) ? TrueVal : FalseVal;
-	// KDM : 'Toggle list details' is active as long as :
-	// 1.] The details manager exists 2.] The current squad is valid 3.] The soldier UI has focus.
-	CurrentNavHelp[4] = (DetailsManagerExists() && ValidSquadWithSoldierUIFocused) ? TrueVal : FalseVal;		
-	// KDM : 'View squad' is active as long as : 
-	// 1.] The current squad is valid 2.] The squad UI has focus 3.] You aren't coming through the Squad Menu 4.] The squad isn't on a mission.
-	CurrentNavHelp[5] = (CanViewCurrentSquad() && (!SoldierUIFocused)) ? TrueVal : FalseVal;
-	// KDM : 'Delete squad' is active as long as :
-	// 1.] The current squad is valid 2.] The squad UI has focus 3.] The squad isn't on a mission.
-	CurrentNavHelp[6] = (SelectedSquadIsDeletable() && (!SoldierUIFocused)) ? TrueVal : FalseVal;
-	// KDM : 'Transfer soldiers' is active as long as :
-	// 1.] The current squad is valid 2.] The selected list item is valid 3.] The soldier is not disabled 4.] The soldier is transferable 5.] The soldier UI has focus.
-	// If DisplayingAvailableSoldiers is true, you can 'Transfer to Squad', else you can 'Remove from Squad'.
-	CurrentNavHelp[7] = (SelectedSoldierIsMoveable(m_kList, m_kList.selectedIndex, DummySoldierState) && SoldierUIFocused && 
-		DisplayingAvailableSoldiers) ? TrueVal : FalseVal;
-
-	for (i = 0; i < 8; i++)
-	{
-		if (CachedNavHelp[i] != CurrentNavHelp[i])
-		{
-			// KDM : Don't break once we have found a change, since we want to update CachedNavHelp with all changes.
-			CachedNavHelp[i] = CurrentNavHelp[i];
-			NavHelpChanged = true;
-		}
-	}
-
-	return NavHelpChanged;
-}
-
-simulated function UpdateNavHelp()
-{
-	local string NavString;
-	local UINavigationHelp NavHelp;
-	local XComGameState_Unit DummySoldierState;
-
-	NavHelp =`HQPRES.m_kAvengerHUD.NavHelp;
-	
-	// KDM : If the navigation help has not changed since last time return. This prevents unnecessary navigation flashing.
-	if (!NavHelpHasChanged()) return;
-
-	NavHelp.ClearButtonHelp();
-	NavHelp.bIsVerticalHelp = true;
-	NavHelp.AddBackButton();
-
-	if (!CurrentSquadIsValid())
-	{
-		// KDM : If the squad is not valid, the soldier UI shouldn't be able to gain focus.
-		if (!SoldierUIFocused)
-		{
-			NavHelp.AddLeftHelp(CreateSquadStr, class'UIUtilities_Input'.const.ICON_Y_TRIANGLE);
-		}
-	}
-	else
-	{
-		// KDM : If the squad UI has focus.
-		if (!SoldierUIFocused)
-		{
-			NavHelp.AddLeftHelp(ScrollSquadBioStr, class'UIUtilities_Input'.const.ICON_RSTICK);
-			NavHelp.AddLeftHelp(ChangeSquadIconStr, class'UIUtilities_Input'.const.ICON_LSCLICK_L3);
-			NavHelp.AddLeftHelp(EditSquadBioStr, class'UIUtilities_Input'.const.ICON_RT_R2);
-			NavHelp.AddLeftHelp(RenameSquadStr, class'UIUtilities_Input'.const.ICON_LT_L2);
-			if (SelectedSquadIsDeletable())
-			{
-				NavHelp.AddLeftHelp(DeleteSquadStr, class'UIUtilities_Input'.const.ICON_X_SQUARE);
-			}
-			NavHelp.AddLeftHelp(CreateSquadStr, class'UIUtilities_Input'.const.ICON_Y_TRIANGLE);
-			NavHelp.AddLeftHelp(FocusUISoldiersStr, class'UIUtilities_Input'.const.ICON_RSCLICK_R3);
-
-			NavHelp.AddCenterHelp(PrevSquadStr, class'UIUtilities_Input'.const.ICON_LB_L1);
-			NavHelp.AddCenterHelp(NextSquadStr, class'UIUtilities_Input'.const.ICON_RB_R1);
-
-			if (CanViewCurrentSquad())
-			{
-				// KDM : For some reason, bIsVerticalHelp has to be false for the right container, else the help falls off the side of the screen.
-				NavHelp.bIsVerticalHelp = false;
-				NavHelp.AddRightHelp(ViewSquadStr, class'UIUtilities_Input'.const.ICON_BACK_SELECT);
-			}
-		}
-		// KDM : If the soldier UI has focus.
-		else
-		{
-			if (SelectedSoldierIsMoveable(m_kList, m_kList.selectedIndex, DummySoldierState))
-			{
-				NavString = (DisplayingAvailableSoldiers) ? TransferToSquadStr : RemoveFromSquadStr;
-				NavHelp.AddLeftHelp(NavString, class'UIUtilities_Input'.const.ICON_A_X);
-			}
-			NavHelp.AddLeftHelp(FocusUISquadStr, class'UIUtilities_Input'.const.ICON_RSCLICK_R3);
-			
-			NavHelp.AddCenterHelp(ViewSquadSoldiersStr, class'UIUtilities_Input'.const.ICON_LB_L1);
-			NavHelp.AddCenterHelp(ViewAvailableSoldierStr, class'UIUtilities_Input'.const.ICON_RB_R1);
-			NavHelp.AddCenterHelp(m_strToggleSort, class'UIUtilities_Input'.const.ICON_X_SQUARE);
-			NavHelp.AddCenterHelp(m_strChangeColumn, class'UIUtilities_Input'.const.ICON_DPAD_HORIZONTAL);
-			
-			if (DetailsManagerExists())
-			{
-				NavHelp.bIsVerticalHelp = false;
-				NavHelp.AddRightHelp(CAPS(class'MoreDetailsManager'.default.m_strToggleDetails), class'UIUtilities_Input'.const.ICON_RT_R2);
-			}
-		}
-	}	
-
-	NavHelp.Show();
-}
 
 simulated function bool DetailsManagerExists()
 {
@@ -1415,6 +1107,306 @@ simulated function bool CanTransferSoldier(StateObjectReference SoldierRef, opti
 
 	return true;
 }
+
+// ===================================================
+// =========== Navigation Help Related ===============
+// ===================================================
+
+simulated function bool NavHelpHasChanged()
+{
+	local bool NavHelpChanged, ValidSquadWithSquadUIFocused, ValidSquadWithSoldierUIFocused;
+	local int i, FalseVal, TrueVal, CurrentNavHelp[8];
+	local XComGameState_Unit DummySoldierState;
+
+	FalseVal = 0;
+	TrueVal = 1;
+
+	NavHelpChanged = false;
+	ValidSquadWithSquadUIFocused = (CurrentSquadIsValid() && (!SoldierUIFocused)) ? true : false;
+	ValidSquadWithSoldierUIFocused = (CurrentSquadIsValid() && SoldierUIFocused) ? true : false;
+
+	// KDM : 'Close screen' is automatically true and can be ignored.
+	// KDM : 'Create squad' is active as long as the squad UI has focus.
+	CurrentNavHelp[0] = (!SoldierUIFocused) ? TrueVal : FalseVal;
+	// KDM : The following are active as long as the current squad is valid and the squad UI has focus :
+	// 1.] Previous squad 2.] Next squad 3.] Rename squad 4.] Edit squad biography 5.] Edit squad icon 6.] Scroll biography text 7.] Focus soldier UI.
+	CurrentNavHelp[1] = (ValidSquadWithSquadUIFocused) ? TrueVal : FalseVal;
+	// KDM : The following are active as long as the current squad is valid and the soldier UI has focus :
+	// 1.] Change sort column 2.] Toggle sort 3.] Focus squad UI.
+	CurrentNavHelp[2] = (ValidSquadWithSoldierUIFocused) ? TrueVal : FalseVal;
+	// KDM : 'Squad soldiers' and 'Available soldiers' tabs are potentially active as long as the current squad is valid and the soldier UI has focus.
+	// If DisplayingAvailableSoldiers is true, the 'Available soldiers' tab is active, else the 'Squad soldiers' tab is active.
+	CurrentNavHelp[3] = (ValidSquadWithSoldierUIFocused && DisplayingAvailableSoldiers) ? TrueVal : FalseVal;
+	// KDM : 'Toggle list details' is active as long as :
+	// 1.] The details manager exists 2.] The current squad is valid 3.] The soldier UI has focus.
+	CurrentNavHelp[4] = (DetailsManagerExists() && ValidSquadWithSoldierUIFocused) ? TrueVal : FalseVal;		
+	// KDM : 'View squad' is active as long as : 
+	// 1.] The current squad is valid 2.] The squad UI has focus 3.] You aren't coming through the Squad Menu 4.] The squad isn't on a mission.
+	CurrentNavHelp[5] = (CanViewCurrentSquad() && (!SoldierUIFocused)) ? TrueVal : FalseVal;
+	// KDM : 'Delete squad' is active as long as :
+	// 1.] The current squad is valid 2.] The squad UI has focus 3.] The squad isn't on a mission.
+	CurrentNavHelp[6] = (SelectedSquadIsDeletable() && (!SoldierUIFocused)) ? TrueVal : FalseVal;
+	// KDM : 'Transfer soldiers' is active as long as :
+	// 1.] The current squad is valid 2.] The selected list item is valid 3.] The soldier is not disabled 4.] The soldier is transferable 5.] The soldier UI has focus.
+	// If DisplayingAvailableSoldiers is true, you can 'Transfer to squad', else you can 'Remove from squad'.
+	CurrentNavHelp[7] = (SelectedSoldierIsMoveable(m_kList, m_kList.selectedIndex, DummySoldierState) && SoldierUIFocused && 
+		DisplayingAvailableSoldiers) ? TrueVal : FalseVal;
+
+	for (i = 0; i < 8; i++)
+	{
+		if (CachedNavHelp[i] != CurrentNavHelp[i])
+		{
+			// KDM : Don't break once we have found a change, since we want to update CachedNavHelp with all changes.
+			CachedNavHelp[i] = CurrentNavHelp[i];
+			NavHelpChanged = true;
+		}
+	}
+
+	return NavHelpChanged;
+}
+
+simulated function UpdateNavHelp()
+{
+	local string NavString;
+	local UINavigationHelp NavHelp;
+	local XComGameState_Unit DummySoldierState;
+
+	NavHelp =`HQPRES.m_kAvengerHUD.NavHelp;
+	
+	// KDM : If the navigation help has not changed since last time return. This prevents unnecessary navigation help flicker.
+	if (!NavHelpHasChanged()) return;
+
+	NavHelp.ClearButtonHelp();
+	NavHelp.bIsVerticalHelp = true;
+	NavHelp.AddBackButton();
+
+	if (!CurrentSquadIsValid())
+	{
+		if (!SoldierUIFocused)
+		{
+			NavHelp.AddLeftHelp(CreateSquadStr, class'UIUtilities_Input'.const.ICON_Y_TRIANGLE);
+		}
+	}
+	else
+	{
+		// KDM : If the squad UI has focus.
+		if (!SoldierUIFocused)
+		{
+			NavHelp.AddLeftHelp(ScrollSquadBioStr, class'UIUtilities_Input'.const.ICON_RSTICK);
+			NavHelp.AddLeftHelp(ChangeSquadIconStr, class'UIUtilities_Input'.const.ICON_LSCLICK_L3);
+			NavHelp.AddLeftHelp(EditSquadBioStr, class'UIUtilities_Input'.const.ICON_RT_R2);
+			NavHelp.AddLeftHelp(RenameSquadStr, class'UIUtilities_Input'.const.ICON_LT_L2);
+			if (SelectedSquadIsDeletable())
+			{
+				NavHelp.AddLeftHelp(DeleteSquadStr, class'UIUtilities_Input'.const.ICON_X_SQUARE);
+			}
+			NavHelp.AddLeftHelp(CreateSquadStr, class'UIUtilities_Input'.const.ICON_Y_TRIANGLE);
+			NavHelp.AddLeftHelp(FocusUISoldiersStr, class'UIUtilities_Input'.const.ICON_RSCLICK_R3);
+
+			NavHelp.AddCenterHelp(PrevSquadStr, class'UIUtilities_Input'.const.ICON_LB_L1);
+			NavHelp.AddCenterHelp(NextSquadStr, class'UIUtilities_Input'.const.ICON_RB_R1);
+
+			if (CanViewCurrentSquad())
+			{
+				// KDM : For some reason, bIsVerticalHelp has to be false for the right container, else the help falls off the side of the screen.
+				NavHelp.bIsVerticalHelp = false;
+				NavHelp.AddRightHelp(ViewSquadStr, class'UIUtilities_Input'.const.ICON_BACK_SELECT);
+			}
+		}
+		// KDM : If the soldier UI has focus.
+		else
+		{
+			if (SelectedSoldierIsMoveable(m_kList, m_kList.selectedIndex, DummySoldierState))
+			{
+				NavString = (DisplayingAvailableSoldiers) ? TransferToSquadStr : RemoveFromSquadStr;
+				NavHelp.AddLeftHelp(NavString, class'UIUtilities_Input'.const.ICON_A_X);
+			}
+			NavHelp.AddLeftHelp(FocusUISquadStr, class'UIUtilities_Input'.const.ICON_RSCLICK_R3);
+			
+			NavHelp.AddCenterHelp(ViewSquadSoldiersStr, class'UIUtilities_Input'.const.ICON_LB_L1);
+			NavHelp.AddCenterHelp(ViewAvailableSoldierStr, class'UIUtilities_Input'.const.ICON_RB_R1);
+			NavHelp.AddCenterHelp(m_strToggleSort, class'UIUtilities_Input'.const.ICON_X_SQUARE);
+			NavHelp.AddCenterHelp(m_strChangeColumn, class'UIUtilities_Input'.const.ICON_DPAD_HORIZONTAL);
+			
+			if (DetailsManagerExists())
+			{
+				NavHelp.bIsVerticalHelp = false;
+				NavHelp.AddRightHelp(CAPS(class'MoreDetailsManager'.default.m_strToggleDetails), class'UIUtilities_Input'.const.ICON_RT_R2);
+			}
+		}
+	}	
+
+	NavHelp.Show();
+}
+
+// ===================================================
+// =========== General Helper Functions ==============
+// ===================================================
+
+simulated function XComGameState_LWPersistentSquad GetCurrentSquad()
+{
+	local StateObjectReference CurrentSquadRef;
+	
+	if (CurrentSquadIndex < 0) return none;
+	
+	CurrentSquadRef = `LWSQUADMGR.Squads[CurrentSquadIndex];
+	return XComGameState_LWPersistentSquad(`XCOMHISTORY.GetGameStateForObjectID(CurrentSquadRef.ObjectID));
+}
+
+simulated function bool SquadsExist()
+{
+	return (GetTotalSquads() == 0) ? false : true;
+}
+
+simulated function bool CurrentSquadIsValid()
+{
+	return (SquadsExist() && (CurrentSquadIndex >= 0) && (CurrentSquadIndex < GetTotalSquads()));
+}
+
+simulated function int GetTotalSquads()
+{
+	return `LWSQUADMGR.Squads.Length;
+}
+
+simulated function InitializeCachedNav()
+{
+	local int i;
+
+	for (i = 0; i < 8; i++)
+	{
+		CachedNavHelp[i] = -1;
+	}
+}
+
+simulated function SetInitialCurrentSquadIndex()
+{
+	local UISquadMenu SquadMenu;
+
+	SquadMenu = class'Utilities_ForControllers'.static.GetUISquadMenuFromStack();
+
+	// KDM : If we are entering the SquadBarracks through : Squad Select --> Squad Menu.
+	// In this case, select the squad which was last highlighted in the Squad Menu.	
+	if (SquadMenu != none)
+	{
+		CurrentSquadIndex = (SquadsExist()) ? SquadMenu.List.SelectedIndex : -1;
+	}
+	// KDM : If we are entering the SquadBarracks through the 'Squad Management' Avenger tab.
+	// In this case, select the 1st squad.
+	else
+	{
+		CurrentSquadIndex = (SquadsExist()) ? 0 : -1;
+	}
+}
+
+simulated function ResetTabFocus()
+{
+	// KDM : By default, the squad's soldiers tab has focus.
+	SetTabFocus(false, true);
+}
+
+simulated function ResetSortType()
+{
+	// KDM : By default, sort the list in rank-descending order.
+	m_iSortTypeOrderIndex = 0;
+	m_eSortType = ePersonnelSoldierSortType_Rank;
+	m_bFlipSort = false;
+}
+
+// KDM : Gets the 1st squad which is not on a mission; if no such squad exists, returns none.
+function XComGameState_LWPersistentSquad GetFirstIdleSquad()
+{
+	local int i;
+	local XComGameState_LWPersistentSquad SquadState;
+	
+	for (i = 0; i < `LWSQUADMGR.Squads.length; i++)
+	{
+		SquadState = `LWSQUADMGR.GetSquad(i);
+		// KDM : If we have found a squad which isn't on a mission then return it.
+		if (!SquadIsOnMission(SquadState))
+		{
+			return SquadState;
+		}
+	}
+	
+	return none;
+}
+
+function bool SquadIsOnMission(XComGameState_LWPersistentSquad SquadState)
+{
+	return (SquadState.bOnMission || (SquadState.CurrentMission.ObjectID > 0));
+}
+
+simulated function bool SelectedSquadIsDeletable()
+{
+	local XComGameState_LWPersistentSquad CurrentSquadState;
+	
+	if (!CurrentSquadIsValid()) return false;
+	CurrentSquadState = GetCurrentSquad();
+
+	// LW : Don't delete a squad if it is on a mission.
+	if (SquadIsOnMission(CurrentSquadState)) return false;
+
+	return true;
+}
+
+simulated function SetSelectedSquadRef(optional StateObjectReference SquadRef)
+{
+	local XComGameState_LWPersistentSquad SquadState;
+
+	// KDM : We have been given a valid squad reference, so select that squad.
+	if (SquadRef.ObjectID > 0)
+	{
+		class'Utilities_ForControllers'.static.SetSquad(SquadRef);
+	}
+	// KDM : We were not given a valid squad reference, yet squads exist, so select the 1st squad which isn't on a mission.
+	// If no such squad exists then exit; it is very important we 'do not' make an on-mission squad active.
+	else if (`LWSQUADMGR.Squads.Length > 0)
+	{
+		SquadState = GetFirstIdleSquad();
+		if (SquadState != none)
+		{
+			class'Utilities_ForControllers'.static.SetSquad(SquadState.GetReference());
+		}
+	}
+}
+
+simulated function ToggleUIFocus()
+{
+	SetUIFocus(!SoldierUIFocused);
+}
+
+simulated function SetUIFocus(bool NewUIFocus, optional bool ForceUpdate = false)
+{
+	if (ForceUpdate || (SoldierUIFocused != NewUIFocus))
+	{
+		SoldierUIFocused = NewUIFocus;
+		UpdateUIForFocus();
+	}
+}
+
+simulated function ResetUIFocus()
+{
+	// KDM : By default, the squad UI has focus.
+	SetUIFocus(false, true);
+}
+
+simulated function ToggleTabFocus()
+{
+	SetTabFocus(!DisplayingAvailableSoldiers);
+}
+
+simulated function SetTabFocus(bool NewTabFocus, optional bool ForceUpdate = false)
+{
+	if (ForceUpdate || (DisplayingAvailableSoldiers != NewTabFocus))
+	{
+		DisplayingAvailableSoldiers = NewTabFocus;
+		UpdateTabsForFocus();
+	}
+}
+
+// ===================================================
+// ============== Default Properties =================
+// ===================================================
 
 defaultproperties
 {
