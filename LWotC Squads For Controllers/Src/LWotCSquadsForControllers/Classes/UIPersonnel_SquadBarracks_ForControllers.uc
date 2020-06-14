@@ -5,9 +5,6 @@
 //----------------------------------------------------------------------------
 class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadSettings);
 
-// KDM CHECK FROM HERE - DO THIS UNTIL ONUNREALCOMMAND
-//********************************************
-
 // KDM : I don't use bSelectSquad; however, it is referenced in LW files, so just leave it here and ignore it.
 var bool bSelectSquad;
 
@@ -768,39 +765,6 @@ simulated function OnRemoved()
 	super.OnRemoved();
 }
 
-
-
-// KDM CHECK FROM HERE
-
-
-simulated function bool DetailsManagerExists()
-{
-	return (GetDetailsManager() != none);
-}
-
-simulated function ToggleListDetails()
-{
-	local MoreDetailsManager DetailsManager;
-
-	DetailsManager = GetDetailsManager();
-	if (DetailsManager != none)
-	{
-		DetailsManager.OnToggleDetails();
-	}
-}
-
-simulated function MoreDetailsManager GetDetailsManager()
-{
-	// KDM : The details manager is accessed through list items of type UIPersonnel_SoldierListItemDetailed; therefore, 
-	// if no list items exist, we have to assume the details manager hasn't been set up.
-	if (m_kList.ItemCount > 0)
-	{
-		return class'MoreDetailsManager'.static.GetParentDM(m_kList.GetItem(0));
-	}
-
-	return none;
-}
-
 simulated function bool OnUnrealCommand(int cmd, int arg)
 {
 	local bool bHandled;
@@ -822,10 +786,12 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 			UpdateNavHelp();
 		}
 	}
+	// KDM : B button closes the screen.
 	else if (cmd == class'UIUtilities_Input'.static.GetBackButtonInputCode())
 	{
 		CloseScreen();
 	}
+	// KDM : If the squad UI has focus.
 	else if (!SoldierUIFocused)
 	{
 		switch(cmd)
@@ -858,7 +824,7 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 				UpdateNavHelp();
 				break;
 
-			// KDM : Left stick click changes squad icon.
+			// KDM : Left stick click changes the squad's icon.
 			case class'UIUtilities_Input'.const.FXS_BUTTON_L3:
 				EditSquadIcon();
 				break;
@@ -868,7 +834,7 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 				RenameSquad();
 				break;
 			
-			// KDM : Right trigger edits the biography.
+			// KDM : Right trigger edits the squad's biography.
 			case class'UIUtilities_Input'.const.FXS_BUTTON_RTRIGGER:
 				EditSquadBiography();
 				break;
@@ -899,9 +865,10 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 				break;
 		}
 	}
+	// KDM : If the soldier UI has focus.
 	else if (SoldierUIFocused)
 	{
-		// KDM : Left bumper displays squad's soldiers while right bumper displays available soldiers.
+		// KDM : Left bumper displays 'squad's soldiers' while right bumper displays 'available soldiers'.
 		if (((cmd == class'UIUtilities_Input'.const.FXS_BUTTON_LBUMPER) && DisplayingAvailableSoldiers) ||
 			((cmd == class'UIUtilities_Input'.const.FXS_BUTTON_RBUMPER) && (!DisplayingAvailableSoldiers)))
 		{
@@ -943,7 +910,7 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 			// KDM : A new soldier could have been selected so update the navigation help system.
 			UpdateNavHelp();
 		}
-		// KDM : A button transfers a soldier to/from a squad, if possible.
+		// KDM : A button transfers a soldier to/from a squad.
 		else if (cmd == class'UIUtilities_Input'.static.GetAdvanceButtonInputCode())
 		{
 			OnSoldierSelected(m_kList, m_kList.selectedIndex);
@@ -970,147 +937,19 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 	return bHandled; 
 }
 
-simulated function ResetBiographyScroll()
-{
-	local UIScrollbar Scrollbar;
-
-	Scrollbar = CurrentSquadBio.scrollbar;
-	if (Scrollbar != none)
-	{
-		Scrollbar.SetThumbAtPercent(0.0);
-	}
-}
-
-simulated function bool SelectedSoldierIsMoveable(UIList SquadList, int SelectedIndex, out XComGameState_Unit CurrentSoldierState)
-{
-	local UIPersonnel_ListItem SoldierListItem;
-	local XComGameState_LWPersistentSquad CurrentSquadState;
-
-	if (!CurrentSquadIsValid()) return false;
-	if ((SelectedIndex < 0) || (SelectedIndex >= SquadList.ItemCount)) return false;
-	if (UIPersonnel_ListItem(SquadList.GetItem(SelectedIndex)).IsDisabled) return false;
-
-	CurrentSquadState = GetCurrentSquad();
-	SoldierListItem = UIPersonnel_ListItem(SquadList.GetItem(SelectedIndex));
-	CurrentSoldierState = XComGameState_Unit(`XCOMHISTORY.GetGameStateForObjectID(SoldierListItem.UnitRef.ObjectID));
-	
-	if (!CanTransferSoldier(CurrentSoldierState.GetReference(), CurrentSquadState)) return false;
-
-	return true;
-}
-
-simulated function OnSoldierSelected(UIList SquadList, int SelectedIndex)
-{
-	local int SquadListSize;
-	// local UIPersonnel_ListItem SoldierListItem;
-	local XComGameState NewGameState;
-	local XComGameState_LWPersistentSquad CurrentSquadState;
-	local XComGameState_Unit CurrentSoldierState;
-
-	// KDM : CurrentSoldierState is passed by reference since it is needed below.
-	if (!SelectedSoldierIsMoveable(SquadList, SelectedIndex, CurrentSoldierState)) return;
-
-	CurrentSquadState = GetCurrentSquad();
-	//`log("GOT BELOW IN ONSOLDIERSELECTED WITH VALUE : " @ CurrentSoldierState);
-
-
-	// KDM REMOVE
-	//if (!CurrentSquadIsValid()) return;
-	//if ((SelectedIndex < 0) || (SelectedIndex >= SquadList.ItemCount)) return;
-	//if (UIPersonnel_ListItem(SquadList.GetItem(SelectedIndex)).IsDisabled) return;
-
-	// CurrentSquadState = GetCurrentSquad();
-	// SoldierListItem = UIPersonnel_ListItem(SquadList.GetItem(SelectedIndex));
-	// CurrentSoldierState = XComGameState_Unit(`XCOMHISTORY.GetGameStateForObjectID(SoldierListItem.UnitRef.ObjectID));
-	
-	// if (!CanTransferSoldier(CurrentSoldierState.GetReference(), CurrentSquadState)) return;
-
-	NewGameState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Transferring Soldier");
-	CurrentSquadState = XComGameState_LWPersistentSquad(NewGameState.CreateStateObject(class'XComGameState_LWPersistentSquad', CurrentSquadState.ObjectID));
-	NewGameState.AddStateObject(CurrentSquadState);
-
-	if(DisplayingAvailableSoldiers)
-	{
-		CurrentSquadState.AddSoldier(CurrentSoldierState.GetReference());
-	}
-	else
-	{
-		CurrentSquadState.RemoveSoldier(CurrentSoldierState.GetReference());
-	}
-
-	`XCOMGAME.GameRuleset.SubmitGameState(NewGameState);
-
-	// KDM : Normally I would just update the list UI; however, the squad's soldier icon list also needs to be updated.
-	UpdateAll(false);
-	
-	// KDM : Attempt to keep the same item index selected for continuity.
-	SquadListSize = SquadList.ItemCount;
-	if ((SquadListSize > 0) && (SquadList.SelectedIndex != SelectedIndex))
-	{
-		if (SelectedIndex >= SquadListSize)
-		{
-			SelectedIndex = SquadListSize - 1;
-		}
-		SquadList.SetSelectedIndex(SelectedIndex);
-
-		if (SquadList.Scrollbar != none)
-		{
-			SquadList.Scrollbar.SetThumbAtPercent(float(SelectedIndex) / float(SquadListSize - 1));
-		}
-	}
-}
-
-simulated function bool CanTransferSoldier(StateObjectReference SoldierRef, optional XComGameState_LWPersistentSquad CurrentSquadState)
-{
-	local int CurrentSquadSize, MaxSquadSize;
-	local array<XComGameState_Unit> CurrentSquadSoldiers;
-	local XComGameState_Unit CurrentSoldierState;
-	
-	CurrentSoldierState = XComGameState_Unit(`XCOMHISTORY.GetGameStateForObjectID(SoldierRef.ObjectID));
-
-	// LW : You can't move soldiers on a mission; this does not include haven liaisons.
-	if (class'LWDLCHelpers'.static.IsUnitOnMission(CurrentSoldierState) && (!`LWOUTPOSTMGR.IsUnitAHavenLiaison(CurrentSoldierState.GetReference())))
-	{
-		return false;
-	}
-
-	if (CurrentSquadState == none)
-	{
-		CurrentSquadState = GetCurrentSquad();
-	}
-
-	if (CurrentSquadState != none)
-	{
-		// LW : You can't add soldiers to squads that are on a mission.
-		// KDM : REMOVE
-		//if(CurrentSquadState.bOnMission || CurrentSquadState.CurrentMission.ObjectID > 0)
-		if (SquadIsOnMission(CurrentSquadState))
-		{
-			if (DisplayingAvailableSoldiers)
-			{
-				return false;
-			}
-		}
-
-		// LW : You can't add soldiers to a max size squad.
-		CurrentSquadSoldiers = CurrentSquadState.GetSoldiers();
-		CurrentSquadSize = CurrentSquadSoldiers.Length;
-		MaxSquadSize = class'XComGameState_LWSquadManager'.default.MAX_SQUAD_SIZE;
-		if (CurrentSquadSize >= MaxSquadSize)
-		{
-			if (DisplayingAvailableSoldiers)
-			{
-				return false;
-			}
-		}
-	}
-
-	return true;
-}
-
 // ===================================================
 // =========== Navigation Help Related ===============
 // ===================================================
+
+simulated function InitializeCachedNav()
+{
+	local int i;
+
+	for (i = 0; i < 8; i++)
+	{
+		CachedNavHelp[i] = -1;
+	}
+}
 
 simulated function bool NavHelpHasChanged()
 {
@@ -1268,16 +1107,6 @@ simulated function int GetTotalSquads()
 	return `LWSQUADMGR.Squads.Length;
 }
 
-simulated function InitializeCachedNav()
-{
-	local int i;
-
-	for (i = 0; i < 8; i++)
-	{
-		CachedNavHelp[i] = -1;
-	}
-}
-
 simulated function SetInitialCurrentSquadIndex()
 {
 	local UISquadMenu SquadMenu;
@@ -1401,6 +1230,159 @@ simulated function SetTabFocus(bool NewTabFocus, optional bool ForceUpdate = fal
 	{
 		DisplayingAvailableSoldiers = NewTabFocus;
 		UpdateTabsForFocus();
+	}
+}
+
+simulated function bool DetailsManagerExists()
+{
+	return (GetDetailsManager() != none);
+}
+
+simulated function ToggleListDetails()
+{
+	local MoreDetailsManager DetailsManager;
+
+	DetailsManager = GetDetailsManager();
+	if (DetailsManager != none)
+	{
+		DetailsManager.OnToggleDetails();
+	}
+}
+
+simulated function MoreDetailsManager GetDetailsManager()
+{
+	// KDM : The Details Manager is accessed through list items of type UIPersonnel_SoldierListItemDetailed; therefore, 
+	// if no list items exist, we have to assume the details manager hasn't been set up.
+	if (m_kList.ItemCount > 0)
+	{
+		return class'MoreDetailsManager'.static.GetParentDM(m_kList.GetItem(0));
+	}
+
+	return none;
+}
+
+simulated function ResetBiographyScroll()
+{
+	local UIScrollbar Scrollbar;
+
+	Scrollbar = CurrentSquadBio.scrollbar;
+	if (Scrollbar != none)
+	{
+		Scrollbar.SetThumbAtPercent(0.0);
+	}
+}
+
+simulated function bool SelectedSoldierIsMoveable(UIList SquadList, int SelectedIndex, out XComGameState_Unit CurrentSoldierState)
+{
+	local UIPersonnel_ListItem SoldierListItem;
+	local XComGameState_LWPersistentSquad CurrentSquadState;
+
+	if (!CurrentSquadIsValid()) return false;
+	if ((SelectedIndex < 0) || (SelectedIndex >= SquadList.ItemCount)) return false;
+	if (UIPersonnel_ListItem(SquadList.GetItem(SelectedIndex)).IsDisabled) return false;
+
+	CurrentSquadState = GetCurrentSquad();
+	SoldierListItem = UIPersonnel_ListItem(SquadList.GetItem(SelectedIndex));
+	CurrentSoldierState = XComGameState_Unit(`XCOMHISTORY.GetGameStateForObjectID(SoldierListItem.UnitRef.ObjectID));
+	
+	if (!CanTransferSoldier(CurrentSoldierState.GetReference(), CurrentSquadState)) return false;
+
+	return true;
+}
+
+// KDM : LW function
+simulated function bool CanTransferSoldier(StateObjectReference SoldierRef, optional XComGameState_LWPersistentSquad CurrentSquadState)
+{
+	local int CurrentSquadSize, MaxSquadSize;
+	local array<XComGameState_Unit> CurrentSquadSoldiers;
+	local XComGameState_Unit CurrentSoldierState;
+	
+	CurrentSoldierState = XComGameState_Unit(`XCOMHISTORY.GetGameStateForObjectID(SoldierRef.ObjectID));
+
+	// LW : You can't move soldiers on a mission; this does not include haven liaisons.
+	if (class'LWDLCHelpers'.static.IsUnitOnMission(CurrentSoldierState) && (!`LWOUTPOSTMGR.IsUnitAHavenLiaison(CurrentSoldierState.GetReference())))
+	{
+		return false;
+	}
+
+	if (CurrentSquadState == none)
+	{
+		CurrentSquadState = GetCurrentSquad();
+	}
+
+	if (CurrentSquadState != none)
+	{
+		// LW : You can't add soldiers to squads that are on a mission.
+		if (SquadIsOnMission(CurrentSquadState))
+		{
+			if (DisplayingAvailableSoldiers)
+			{
+				return false;
+			}
+		}
+
+		// LW : You can't add soldiers to a max size squad.
+		CurrentSquadSoldiers = CurrentSquadState.GetSoldiers();
+		CurrentSquadSize = CurrentSquadSoldiers.Length;
+		MaxSquadSize = class'XComGameState_LWSquadManager'.default.MAX_SQUAD_SIZE;
+		if (CurrentSquadSize >= MaxSquadSize)
+		{
+			if (DisplayingAvailableSoldiers)
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+simulated function OnSoldierSelected(UIList SquadList, int SelectedIndex)
+{
+	local int SquadListSize;
+	local XComGameState NewGameState;
+	local XComGameState_LWPersistentSquad CurrentSquadState;
+	local XComGameState_Unit CurrentSoldierState;
+
+	// KDM : CurrentSoldierState is passed by reference since it is needed below.
+	if (!SelectedSoldierIsMoveable(SquadList, SelectedIndex, CurrentSoldierState)) return;
+
+	CurrentSquadState = GetCurrentSquad();
+	
+	NewGameState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Transferring Soldier");
+	CurrentSquadState = XComGameState_LWPersistentSquad(NewGameState.CreateStateObject(class'XComGameState_LWPersistentSquad', CurrentSquadState.ObjectID));
+	NewGameState.AddStateObject(CurrentSquadState);
+
+	// KDM : If we are viewing 'available soldiers', add the soldier to the squad.
+	if (DisplayingAvailableSoldiers)
+	{
+		CurrentSquadState.AddSoldier(CurrentSoldierState.GetReference());
+	}
+	// KDM : If we are viewing the 'squad's soldiers', remove the soldier from the squad.
+	else
+	{
+		CurrentSquadState.RemoveSoldier(CurrentSoldierState.GetReference());
+	}
+
+	`XCOMGAME.GameRuleset.SubmitGameState(NewGameState);
+
+	// KDM : Normally I would just update the list UI; however, the squad's soldier icon list also needs to be updated.
+	UpdateAll(false);
+	
+	// KDM : Attempt to keep the same item index selected for continuity.
+	SquadListSize = SquadList.ItemCount;
+	if ((SquadListSize > 0) && (SquadList.SelectedIndex != SelectedIndex))
+	{
+		if (SelectedIndex >= SquadListSize)
+		{
+			SelectedIndex = SquadListSize - 1;
+		}
+		SquadList.SetSelectedIndex(SelectedIndex);
+
+		if (SquadList.Scrollbar != none)
+		{
+			SquadList.Scrollbar.SetThumbAtPercent(float(SelectedIndex) / float(SquadListSize - 1));
+		}
 	}
 }
 
