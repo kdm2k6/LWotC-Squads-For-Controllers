@@ -917,11 +917,6 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 			// KDM : A new soldier will have been selected so update the navigation help system.
 			UpdateNavHelp();
 		}
-		// KDM : Right trigger toggles the soldier list details.
-		else if (cmd == class'UIUtilities_Input'.const.FXS_BUTTON_RTRIGGER)
-		{
-			ToggleListDetails();
-		}
 		else
 		{
 			bHandled = m_kList.OnUnrealCommand(cmd, arg);
@@ -954,7 +949,7 @@ simulated function InitializeCachedNav()
 simulated function bool NavHelpHasChanged()
 {
 	local bool NavHelpChanged, ValidSquadWithSquadUIFocused, ValidSquadWithSoldierUIFocused;
-	local int i, FalseVal, TrueVal, CurrentNavHelp[8];
+	local int i, FalseVal, TrueVal, CurrentNavHelp[7];
 	local XComGameState_Unit DummySoldierState;
 
 	FalseVal = 0;
@@ -976,22 +971,19 @@ simulated function bool NavHelpHasChanged()
 	// KDM : 'Squad soldiers' and 'Available soldiers' tabs are potentially active as long as the current squad is valid and the soldier UI has focus.
 	// If DisplayingAvailableSoldiers is true, the 'Available soldiers' tab is active, else the 'Squad soldiers' tab is active.
 	CurrentNavHelp[3] = (ValidSquadWithSoldierUIFocused && DisplayingAvailableSoldiers) ? TrueVal : FalseVal;
-	// KDM : 'Toggle list details' is active as long as :
-	// 1.] The details manager exists 2.] The current squad is valid 3.] The soldier UI has focus.
-	CurrentNavHelp[4] = (DetailsManagerExists() && ValidSquadWithSoldierUIFocused) ? TrueVal : FalseVal;		
 	// KDM : 'View squad' is active as long as : 
 	// 1.] The current squad is valid 2.] The squad UI has focus 3.] You aren't coming through the Squad Menu 4.] The squad isn't on a mission.
-	CurrentNavHelp[5] = (CanViewCurrentSquad() && (!SoldierUIFocused)) ? TrueVal : FalseVal;
+	CurrentNavHelp[4] = (CanViewCurrentSquad() && (!SoldierUIFocused)) ? TrueVal : FalseVal;
 	// KDM : 'Delete squad' is active as long as :
 	// 1.] The current squad is valid 2.] The squad UI has focus 3.] The squad isn't on a mission.
-	CurrentNavHelp[6] = (SelectedSquadIsDeletable() && (!SoldierUIFocused)) ? TrueVal : FalseVal;
+	CurrentNavHelp[5] = (SelectedSquadIsDeletable() && (!SoldierUIFocused)) ? TrueVal : FalseVal;
 	// KDM : 'Transfer soldiers' is active as long as :
 	// 1.] The current squad is valid 2.] The selected list item is valid 3.] The soldier is not disabled 4.] The soldier is transferable 5.] The soldier UI has focus.
 	// If DisplayingAvailableSoldiers is true, you can 'Transfer to squad', else you can 'Remove from squad'.
-	CurrentNavHelp[7] = (SelectedSoldierIsMoveable(m_kList, m_kList.selectedIndex, DummySoldierState) && SoldierUIFocused && 
+	CurrentNavHelp[6] = (SelectedSoldierIsMoveable(m_kList, m_kList.selectedIndex, DummySoldierState) && SoldierUIFocused && 
 		DisplayingAvailableSoldiers) ? TrueVal : FalseVal;
 
-	for (i = 0; i < 8; i++)
+	for (i = 0; i < 7; i++)
 	{
 		if (CachedNavHelp[i] != CurrentNavHelp[i])
 		{
@@ -1066,12 +1058,6 @@ simulated function UpdateNavHelp()
 			NavHelp.AddCenterHelp(ViewAvailableSoldierStr, class'UIUtilities_Input'.const.ICON_RB_R1);
 			NavHelp.AddCenterHelp(m_strToggleSort, class'UIUtilities_Input'.const.ICON_X_SQUARE);
 			NavHelp.AddCenterHelp(m_strChangeColumn, class'UIUtilities_Input'.const.ICON_DPAD_HORIZONTAL);
-			
-			if (DetailsManagerExists())
-			{
-				NavHelp.bIsVerticalHelp = false;
-				NavHelp.AddRightHelp(CAPS(class'MoreDetailsManager'.default.m_strToggleDetails), class'UIUtilities_Input'.const.ICON_RT_R2);
-			}
 		}
 	}	
 
@@ -1231,34 +1217,6 @@ simulated function SetTabFocus(bool NewTabFocus, optional bool ForceUpdate = fal
 		DisplayingAvailableSoldiers = NewTabFocus;
 		UpdateTabsForFocus();
 	}
-}
-
-simulated function bool DetailsManagerExists()
-{
-	return (GetDetailsManager() != none);
-}
-
-simulated function ToggleListDetails()
-{
-	local MoreDetailsManager DetailsManager;
-
-	DetailsManager = GetDetailsManager();
-	if (DetailsManager != none)
-	{
-		DetailsManager.OnToggleDetails();
-	}
-}
-
-simulated function MoreDetailsManager GetDetailsManager()
-{
-	// KDM : The Details Manager is accessed through list items of type UIPersonnel_SoldierListItemDetailed; therefore, 
-	// if no list items exist, we have to assume the details manager hasn't been set up.
-	if (m_kList.ItemCount > 0)
-	{
-		return class'MoreDetailsManager'.static.GetParentDM(m_kList.GetItem(0));
-	}
-
-	return none;
 }
 
 simulated function ResetBiographyScroll()
