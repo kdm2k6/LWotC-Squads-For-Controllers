@@ -1119,9 +1119,12 @@ simulated function SetInitialCurrentSquadIndex()
 
 	// KDM : If we are entering the SquadBarracks through : Squad Select --> Squad Menu.
 	// In this case, select the squad which was last highlighted in the Squad Menu.	
-	if (SquadMenu != none)
+	if (SquadMenu != none && SquadMenu.CachedSquad != none)
 	{
-		CurrentSquadIndex = (SquadsExist()) ? SquadMenu.List.SelectedIndex : -1;
+		CurrentSquadIndex = SquadsExist() ?
+			class'Utilities_ForControllers'.static.SquadsIndexWithSquadReference(SquadMenu.CachedSquad.GetReference()) : -1;
+
+		// KDM REMOVE CurrentSquadIndex = (SquadsExist()) ? SquadMenu.List.SelectedIndex : -1;
 	}
 	// KDM : If we are entering the SquadBarracks through the 'Squad Management' Avenger tab.
 	// In this case, select the 1st squad.
