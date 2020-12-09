@@ -705,7 +705,7 @@ simulated function UpdateUIForFocus()
 	FocusAlpha = 100;
 	UnfocusAlpha = 75;
 
-	TopUIAlpha = !SoldierUIFocused ? FocusAlpha : UnfocusAlpha;
+	TopUIAlpha = (!SoldierUIFocused) ? FocusAlpha : UnfocusAlpha;
 	BottomUIAlpha = SoldierUIFocused ? FocusAlpha : UnfocusAlpha;
 	
 	SquadHeader.SetAlpha(TopUIAlpha);
@@ -1017,7 +1017,7 @@ simulated function bool NavHelpHasChanged()
 
 	// KDM : 'Close screen' is automatically true and can be ignored.
 	// KDM : 'Create squad' is active as long as the squad UI has focus.
-	CurrentNavHelp[0] = !SoldierUIFocused ? TrueVal : FalseVal;
+	CurrentNavHelp[0] = (!SoldierUIFocused) ? TrueVal : FalseVal;
 	// KDM : The following are active as long as the current squad is valid and the squad UI has focus :
 	// 1.] Previous squad 2.] Next squad 3.] Rename squad 4.] Edit squad biography 
 	// 5.] Edit squad icon 6.] Scroll biography text 7.] Focus soldier UI.
