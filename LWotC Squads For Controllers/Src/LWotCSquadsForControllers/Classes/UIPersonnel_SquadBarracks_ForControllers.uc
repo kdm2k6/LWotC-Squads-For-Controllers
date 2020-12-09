@@ -44,7 +44,7 @@ var UIList SoldierIconList;
 var UIButton SquadSoldiersTab, AvailableSoldiersTab;
 
 // KDM : Apparently UE3 hates boolean arrays, so we'll go with an int array instead.
-var int CachedNavHelp[8];
+var int CachedNavHelp[7];
 
 simulated function OnInit()
 {
@@ -940,7 +940,7 @@ simulated function InitializeCachedNav()
 {
 	local int i;
 
-	for (i = 0; i < 8; i++)
+	for (i = 0; i < 7; i++)
 	{
 		CachedNavHelp[i] = -1;
 	}
