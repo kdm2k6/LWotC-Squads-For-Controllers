@@ -36,7 +36,7 @@ static function UISquadMenu GetUISquadMenuFromStack()
 }
 
 // KDM : Iterates through a list containing UISquadMenu_ListItem's
-static function int ListIndexWithSquadReference(UIList TheList, StateObjectReference SquadRef)
+static function int ListIndexFromSquadReference(UIList TheList, StateObjectReference SquadRef)
 {
 	local int i, ListSize;
 	local UISquadMenu_ListItem ListItem;
@@ -77,11 +77,23 @@ static function int SquadsIndexWithSquadReference(StateObjectReference SquadRef)
 
 static function SetSelectedIndexWithScroll(UIList TheList, int Index, optional bool Force)
 {
-	TheList.SetSelectedIndex(Index, Force);
+	local int ListSize;
+
+	ListSize = TheList.ItemCount;
+
+	// KDM : If the index was invalid, but the list is not empty, then just select the first list item.
+	if (Index == -1 && ListSize > 0)
+	{
+		TheList.SetSelectedIndex(0, Force);
+	}
+	else
+	{
+		TheList.SetSelectedIndex(Index, Force);
+	}
 
 	if (TheList.Scrollbar != none)
 	{
-		TheList.Scrollbar.SetThumbAtPercent(float(Index) / float(TheList.ItemCount - 1));
+		TheList.Scrollbar.SetThumbAtPercent(float(Index) / float(ListSize - 1));
 	}
 }
 

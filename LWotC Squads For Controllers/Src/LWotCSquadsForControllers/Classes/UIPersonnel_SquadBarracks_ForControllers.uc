@@ -8,8 +8,8 @@ class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadS
 // KDM : I don't use bSelectSquad; however, it is referenced in LW files, so just leave it here and ignore it.
 var bool bSelectSquad;
 
-var StateObjectReference CachedSquad;
-var bool RestoreCachedSquad;
+var StateObjectReference CachedSquadBeforeViewing;
+var bool RestoreCachedSquadAfterViewing;
 
 // KDM : This is needed for the squad icon selector.
 var config array<string> SquadImagePaths;
@@ -540,7 +540,8 @@ simulated function OnDeleteSelectedSquadCallback(Name eAction)
 
 	if (eAction == 'eUIAction_Accept')
 	{
-		CurrentSquadRef = `LWSQUADMGR.Squads[CurrentSquadIndex];
+		CurrentSquadRef = GetCurrentSquadRef();
+		// KDM REMOVE CurrentSquadRef = `LWSQUADMGR.Squads[CurrentSquadIndex];
 
 		// KDM : Don't store `LWSQUADMGR in a variable and access it after calling RemoveSquadByRef(); the reference has become stale !
 		`LWSQUADMGR.RemoveSquadByRef(CurrentSquadRef);
@@ -718,8 +719,8 @@ simulated function ViewCurrentSquad()
 	if (!CanViewCurrentSquad()) return;
 
 	// KDM : Cache the mission squad so we can retrieve it later.
-	CachedSquad = `LWSQUADMGR.LaunchingMissionSquad;
-	RestoreCachedSquad = true;
+	CachedSquadBeforeViewing = `LWSQUADMGR.LaunchingMissionSquad;
+	RestoreCachedSquadAfterViewing = true;
 
 	// KDM : Set the current squad as the mission squad so we can temporarily view it.
 	class'Utilities_ForControllers'.static.SetSquad(GetCurrentSquad().GetReference());
@@ -730,11 +731,11 @@ simulated function ViewCurrentSquad()
 simulated function OnReceiveFocus()
 {
 	// KDM : If we are coming back from viewing a squad, restore the mission squad.
-	if (RestoreCachedSquad)
+	if (RestoreCachedSquadAfterViewing)
 	{
-		RestoreCachedSquad = false;
+		RestoreCachedSquadAfterViewing = false;
 
-		class'Utilities_ForControllers'.static.SetSquad(CachedSquad);
+		class'Utilities_ForControllers'.static.SetSquad(CachedSquadBeforeViewing);
 	}
 
 	super(UIScreen).OnReceiveFocus();
@@ -759,7 +760,8 @@ simulated function OnRemoved()
 	// Save the index of the squad we were looking at, so it can be selected when the Squad Menu receives focus.
 	if (SquadMenu != none)
 	{
-		SquadMenu.CachedIndex = CurrentSquadIndex;
+		SquadMenu.CachedSquadRef = GetCurrentSquadRef();
+		// KDM REMOVE SquadMenu.CachedIndex = CurrentSquadIndex;
 	}
 
 	super.OnRemoved();
@@ -1068,14 +1070,33 @@ simulated function UpdateNavHelp()
 // =========== General Helper Functions ==============
 // ===================================================
 
+simulated function StateObjectReference GetCurrentSquadRef()
+{
+	if (CurrentSquadIndex < 0  || CurrentSquadIndex >= `LWSQUADMGR.Squads.Length)
+	{
+		return none;
+	}
+
+	return `LWSQUADMGR.Squads[CurrentSquadIndex];
+}
+
 simulated function XComGameState_LWPersistentSquad GetCurrentSquad()
 {
 	local StateObjectReference CurrentSquadRef;
 	
-	if (CurrentSquadIndex < 0) return none;
-	
-	CurrentSquadRef = `LWSQUADMGR.Squads[CurrentSquadIndex];
-	return XComGameState_LWPersistentSquad(`XCOMHISTORY.GetGameStateForObjectID(CurrentSquadRef.ObjectID));
+	CurrentSquadRef = GetCurrentSquadRef();
+
+	if (CurrentSquadRef == none)
+	{
+		return none;
+	}
+	else
+	{
+		return XComGameState_LWPersistentSquad(`XCOMHISTORY.GetGameStateForObjectID(CurrentSquadRef.ObjectID));
+	}
+	// KDM REMOVE if (CurrentSquadIndex < 0  || CurrentSquadIndex >= `LWSQUADMGR.Squads.Length) return none;
+	// KDM REMOVE CurrentSquadRef = `LWSQUADMGR.Squads[CurrentSquadIndex];
+	// KDM REMOVE return XComGameState_LWPersistentSquad(`XCOMHISTORY.GetGameStateForObjectID(CurrentSquadRef.ObjectID));
 }
 
 simulated function bool SquadsExist()
@@ -1372,5 +1393,5 @@ defaultproperties
 	SoldierUIFocused = false;
 	DisplayingAvailableSoldiers = false;
 
-	RestoreCachedSquad = false;
+	RestoreCachedSquadAfterViewing = false;
 }

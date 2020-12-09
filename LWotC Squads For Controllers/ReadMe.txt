@@ -119,11 +119,12 @@ DESCRIPTION : It is never set anywhere; therefore it is always false and can be 
 STATUS : SOLVED
 
 VARIABLE : CachedSquad
-DESCRIPTION : It is dealt with in UIPersonnel_SquadBarracks : OnReceiveFocus(), and OnEditOrSelectClicked(). I now make use of it for my own purposes.
+DESCRIPTION : It is dealt with in UIPersonnel_SquadBarracks : OnReceiveFocus(), and OnEditOrSelectClicked(). I now make use of it for my own purposes and
+have renamed it CachedSquadBeforeViewing.
 STATUS : SOLVED
 
 VARIABLE : bRestoreCachedSquad
-DESCRIPTION : It is dealt with in UIPersonnel_SquadBarracks : OnReceiveFocus(), and OnEditOrSelectClicked(). I now make use of my own variable, RestoreCachedSquad.
+DESCRIPTION : It is dealt with in UIPersonnel_SquadBarracks : OnReceiveFocus(), and OnEditOrSelectClicked(). I now make use of my own variable, RestoreCachedSquadAfterViewing.
 STATUS : SOLVED
 
 VARIABLE : CurrentSquadSelection

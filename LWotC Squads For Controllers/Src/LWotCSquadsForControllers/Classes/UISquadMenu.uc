@@ -21,7 +21,8 @@ var array<StateObjectReference> SquadRefs;
 
 // KDM : If we are exiting the SquadBarracks and entering the Squad Menu, we want to maintain selection
 // consistency; save the cached index within SquadBarrack's OnRemoved() and use it within Squad Menu's OnReceiveFocus().
-var int CachedIndex;
+// KDM REMOVE var int CachedIndex;
+var StateObjectReference CachedSquadRef;
 
 simulated function OnInit()
 {
@@ -129,24 +130,30 @@ simulated function UpdateList()
 	PopulateList();
 }
 
-simulated function UpdateSelection(optional bool UseCachedIndex = false)
+simulated function UpdateSelection(optional bool UseCachedSquadRef = false)
 {
-	local int Index;
+	local StateObjectReference SquadRef;
+	// KDM REMOVE : local int Index;
 
 	Navigator.SetSelected(List);
 
 	// KDM : Select the last squad viewed in SquadBarracks, before it was closed.
-	if (UseCachedIndex)
+	if (UseCachedSquadRef)
 	{
-		Index = CachedIndex;
+		SquadRef = CachedSquadRef;
+		// KDM REMOVE : Index = CachedIndex;
 	}
 	// KDM : Select the squad currently visible in the Squad Select screen.
 	else
 	{
-		Index = class'Utilities_ForControllers'.static.ListIndexWithSquadReference(List, `LWSQUADMGR.LaunchingMissionSquad);
+		SquadRef = `LWSQUADMGR.LaunchingMissionSquad;
+		// KDM REMOVE : Index = class'Utilities_ForControllers'.static.ListIndexWithSquadReference(List, `LWSQUADMGR.LaunchingMissionSquad);
 	}
 	
-	class'Utilities_ForControllers'.static.SetSelectedIndexWithScroll(List, Index, true);
+	class'Utilities_ForControllers'.static.SetSelectedIndexWithScroll(List,
+		class'Utilities_ForControllers'.static.ListIndexFromSquadReference(List, SquadRef), 
+		true);
+	// KDM REMOVE class'Utilities_ForControllers'.static.SetSelectedIndexWithScroll(List, Index, true);
 }
 
 simulated function PopulateList()
@@ -311,5 +318,5 @@ defaultproperties
 	PanelW = 400;
 	PanelH = 450;
 
-	CachedIndex = -1;
+	// KDM REMOVE CachedIndex = -1;
 }
