@@ -540,8 +540,7 @@ simulated function OnDeleteSelectedSquadCallback(Name eAction)
 
 	if (eAction == 'eUIAction_Accept')
 	{
-		CurrentSquadRef = GetCurrentSquadRef();
-		// KDM REMOVE CurrentSquadRef = `LWSQUADMGR.Squads[CurrentSquadIndex];
+		CurrentSquadRef = `LWSQUADMGR.Squads[CurrentSquadIndex];
 
 		// KDM : Don't store `LWSQUADMGR in a variable and access it after calling RemoveSquadByRef(); the reference has become stale !
 		`LWSQUADMGR.RemoveSquadByRef(CurrentSquadRef);
@@ -760,7 +759,7 @@ simulated function OnRemoved()
 	// Save the index of the squad we were looking at, so it can be selected when the Squad Menu receives focus.
 	if (SquadMenu != none)
 	{
-		SquadMenu.CachedSquadRef = GetCurrentSquadRef();
+		SquadMenu.CachedSquad = GetCurrentSquad();
 		// KDM REMOVE SquadMenu.CachedIndex = CurrentSquadIndex;
 	}
 
@@ -1070,7 +1069,7 @@ simulated function UpdateNavHelp()
 // =========== General Helper Functions ==============
 // ===================================================
 
-simulated function StateObjectReference GetCurrentSquadRef()
+/* KDM REMOVE NEW simulated function StateObjectReference GetCurrentSquadRef()
 {
 	if (CurrentSquadIndex < 0  || CurrentSquadIndex >= `LWSQUADMGR.Squads.Length)
 	{
@@ -1078,22 +1077,20 @@ simulated function StateObjectReference GetCurrentSquadRef()
 	}
 
 	return `LWSQUADMGR.Squads[CurrentSquadIndex];
-}
+}*/
 
 simulated function XComGameState_LWPersistentSquad GetCurrentSquad()
 {
 	local StateObjectReference CurrentSquadRef;
 	
-	CurrentSquadRef = GetCurrentSquadRef();
-
-	if (CurrentSquadRef == none)
+	if (CurrentSquadIndex < 0  || CurrentSquadIndex >= `LWSQUADMGR.Squads.Length)
 	{
 		return none;
 	}
-	else
-	{
-		return XComGameState_LWPersistentSquad(`XCOMHISTORY.GetGameStateForObjectID(CurrentSquadRef.ObjectID));
-	}
+
+	CurrentSquadRef = `LWSQUADMGR.Squads[CurrentSquadIndex];
+	return XComGameState_LWPersistentSquad(`XCOMHISTORY.GetGameStateForObjectID(CurrentSquadRef.ObjectID));
+	
 	// KDM REMOVE if (CurrentSquadIndex < 0  || CurrentSquadIndex >= `LWSQUADMGR.Squads.Length) return none;
 	// KDM REMOVE CurrentSquadRef = `LWSQUADMGR.Squads[CurrentSquadIndex];
 	// KDM REMOVE return XComGameState_LWPersistentSquad(`XCOMHISTORY.GetGameStateForObjectID(CurrentSquadRef.ObjectID));

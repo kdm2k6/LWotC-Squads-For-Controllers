@@ -22,7 +22,8 @@ var array<StateObjectReference> SquadRefs;
 // KDM : If we are exiting the SquadBarracks and entering the Squad Menu, we want to maintain selection
 // consistency; save the cached index within SquadBarrack's OnRemoved() and use it within Squad Menu's OnReceiveFocus().
 // KDM REMOVE var int CachedIndex;
-var StateObjectReference CachedSquadRef;
+// KDM REMOVE NEW var StateObjectReference CachedSquadRef;
+var XComGameState_LWPersistentSquad CachedSquad;
 
 simulated function OnInit()
 {
@@ -130,7 +131,7 @@ simulated function UpdateList()
 	PopulateList();
 }
 
-simulated function UpdateSelection(optional bool UseCachedSquadRef = false)
+simulated function UpdateSelection(optional bool UseCachedSquad = false)
 {
 	local StateObjectReference SquadRef;
 	// KDM REMOVE : local int Index;
@@ -138,9 +139,9 @@ simulated function UpdateSelection(optional bool UseCachedSquadRef = false)
 	Navigator.SetSelected(List);
 
 	// KDM : Select the last squad viewed in SquadBarracks, before it was closed.
-	if (UseCachedSquadRef)
+	if (UseCachedSquad && CachedSquad != none)
 	{
-		SquadRef = CachedSquadRef;
+		SquadRef = CachedSquad.GetReference();
 		// KDM REMOVE : Index = CachedIndex;
 	}
 	// KDM : Select the squad currently visible in the Squad Select screen.
