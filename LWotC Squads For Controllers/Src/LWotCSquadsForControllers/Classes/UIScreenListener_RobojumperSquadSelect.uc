@@ -32,8 +32,8 @@ simulated function bool OnRobojumperSquadSelectClick(UIScreen Screen, int cmd, i
 		return false;
 	}
 
-	// KDM : If we are viewing the Squad Select screen through : SquadBarracks --> View current squad, we only want
-	// the user to be able to 1.] Select soldiers with the DPad 2.] Close the screen with the B buton.
+	// KDM : If we are viewing the Squad Select screen through : Squad Management screen --> View current squad, 
+	// we only want the user to be able to 1.] Select soldiers with the DPad 2.] Close the screen with the B buton.
 	if (class'Utilities_ForControllers'.static.StackHasSquadBarracksForControllers())
 	{
 		switch(cmd)
@@ -53,7 +53,8 @@ simulated function bool OnRobojumperSquadSelectClick(UIScreen Screen, int cmd, i
 				break;
 		}
 	}
-	// KDM : If we are viewing the Squad Select screen normally, allow the user to open the Squad Menu with left stick click.
+	// KDM : If we are viewing the Squad Select screen normally, allow the user to open the Squad Menu 
+	// with left stick click.
 	else
 	{
 		// KDM : Left stick click opens up the Squad Menu.
@@ -96,8 +97,8 @@ simulated function OpenSquadMenu(UIScreen Screen)
 	if (!SquadSelectScreen.bInstantLineupUI)
 	{
 		// KDM : Very strange problem that exists even with Robojumper's Squad Select and a normal game.
-		// robojumper_UISquadSelect.OnLoseFocus() sets bDirty to true; however, UISquadSelect.Cinematic_PawnsIdling.BeginState
-		// only calls SnapCamera() if bDirty is false. Without this call to SnapCamera(), the camera suddenly zooms into the
+		// robojumper_UISquadSelect.OnLoseFocus sets bDirty to true; however, UISquadSelect.Cinematic_PawnsIdling.BeginState
+		// only calls SnapCamera if bDirty is false. Without this call to SnapCamera, the camera suddenly zooms into the
 		// squad's waist upon entering the idle state. Since I am only bringing up a menu, and the menu buttons update data 
 		// whenever they need to, setting bDirty to false seems fairly safe.
 		SquadSelectScreen.bDirty = false;

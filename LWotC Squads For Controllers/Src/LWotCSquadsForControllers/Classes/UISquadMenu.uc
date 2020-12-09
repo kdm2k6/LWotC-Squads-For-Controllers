@@ -19,10 +19,9 @@ var UIList List;
 
 var array<StateObjectReference> SquadRefs;
 
-// KDM : If we are exiting the SquadBarracks and entering the Squad Menu, we want to maintain selection
-// consistency; save the cached index within SquadBarrack's OnRemoved() and use it within Squad Menu's OnReceiveFocus().
-// KDM REMOVE var int CachedIndex;
-// KDM REMOVE NEW var StateObjectReference CachedSquadRef;
+// KDM : If we are exiting the Squad Management screen and entering the Squad Menu, we want to maintain 
+// selection consistency. To do this, save the cached squad within Squad Management screen's OnRemoved and 
+// use it within Squad Menu's OnReceiveFocus.
 var XComGameState_LWPersistentSquad CachedSquad;
 
 simulated function OnInit()
@@ -134,27 +133,24 @@ simulated function UpdateList()
 simulated function UpdateSelection(optional bool UseCachedSquad = false)
 {
 	local StateObjectReference SquadRef;
-	// KDM REMOVE : local int Index;
-
+	
 	Navigator.SetSelected(List);
 
-	// KDM : Select the last squad viewed in SquadBarracks, before it was closed.
+	// KDM : Get the last squad viewed in the Squad Management screen, before it was closed.
 	if (UseCachedSquad && CachedSquad != none)
 	{
 		SquadRef = CachedSquad.GetReference();
-		// KDM REMOVE : Index = CachedIndex;
 	}
-	// KDM : Select the squad currently visible in the Squad Select screen.
+	// KDM : Get the squad currently visible in the Squad Select screen.
 	else
 	{
 		SquadRef = `LWSQUADMGR.LaunchingMissionSquad;
-		// KDM REMOVE : Index = class'Utilities_ForControllers'.static.ListIndexWithSquadReference(List, `LWSQUADMGR.LaunchingMissionSquad);
 	}
 	
+	// KDM : Select the list item corresponding to the squad we retrieved above.
 	class'Utilities_ForControllers'.static.SetSelectedIndexWithScroll(List,
 		class'Utilities_ForControllers'.static.ListIndexFromSquadReference(List, SquadRef), 
 		true);
-	// KDM REMOVE class'Utilities_ForControllers'.static.SetSelectedIndexWithScroll(List, Index, true);
 }
 
 simulated function PopulateList()
@@ -174,16 +170,21 @@ function TitleStrSizeRealized()
 {
 	local int DiagonalsWidth;
 
-	// KDM : Border padding is placed between the title and diagonals, as well as between the diagonals and panel edges.
+	// KDM : Border padding is placed between the title and diagonals, as well as between the diagonals 
+	// and panel edges.
 	DiagonalsWidth = (PanelW - (4 * BorderPadding) - ListTitle.Width) / 2;
 
 	// KDM : Center the title.
 	ListTitle.SetX((PanelW / 2) - (ListTitle.Width / 2));
 
-	// KDM : Position the left & right diagonals and set their widths.
-	// Unfortunately this requires a bit of hacking since the only way to get diagonals is to use empty UIX2PanelHeader's which
-	// 1.] Don't expect to be empty 2.] Have ActionScript padding built into them 3.] Seem to display differently depending upon
-	// whether their 'supposed text' is to the left of the diagonals or right of the diagonals. Do the best we can, which is pretty good !
+	// KDM : Position the left & right diagonals and set their widths. Unfortunately this requires a bit 
+	// of hacking since the only way to get diagonals is to use empty UIX2PanelHeader's which : 
+	// 1.] Don't expect to be empty 
+	// 2.] Have ActionScript padding built into them 
+	// 3.] Seem to display differently depending upon whether their 'supposed text' is to the left of 
+	// the diagonals or right of the diagonals. 
+	// 
+	// Basically, we do the best we can, and that turns out to be pretty good !
 	LeftDiagonals.SetPosition(BorderPadding, BorderPadding);
 	LeftDiagonals.SetHeaderWidth(DiagonalsWidth + 10, true);
 	RightDiagonals.SetPosition(ListTitle.X + ListTitle.Width + BorderPadding, BorderPadding);
@@ -201,7 +202,8 @@ simulated function OnSquadSelected(StateObjectReference SelectedSquadRef)
 	class'Utilities_ForControllers'.static.SetSquad(SelectedSquadRef);
 
 	// KDM : Update the current squad icon on the Squad Select screen.
-	CurrentSquadIcon = UISquadMenu_ListItem(SquadSelectScreen.GetChildByName('CurrentSquadIconForController', false));
+	CurrentSquadIcon = UISquadMenu_ListItem(SquadSelectScreen.GetChildByName(
+		'CurrentSquadIconForController', false));
 	if (CurrentSquadIcon != none)
 	{
 		CurrentSquadIcon.SquadRef = SelectedSquadRef;
@@ -242,8 +244,9 @@ simulated function CloseScreen()
 	
 	if (SquadSelectScreen != none)
 	{
-		// KDM : Update the Squad Select screen data since we might have entered the Squad Management screen, via the Squad Menu,
-		// and made any number of squad modifications. If we don't do this, we may end up with a 'dirty' Squad Select screen.
+		// KDM : Update the Squad Select screen data since we might have entered the Squad Management screen, 
+		// via the Squad Menu, and made any number of squad modifications. If we don't do this, we may end 
+		// up with a 'dirty' Squad Select screen.
 		SquadSelectScreen.UpdateData();
 	}
 
@@ -254,8 +257,8 @@ simulated function OnReceiveFocus()
 {
 	super.OnReceiveFocus();
 
-	// KDM : Update the Squad Menu list since we might have entered the Squad Management screen and made any number of squad 
-	// modifications. If we don't do this, we may end up with a 'dirty' Squad Menu.
+	// KDM : Update the Squad Menu list since we might have entered the Squad Management screen and made 
+	// any number of squad modifications. If we don't do this, we may end up with a 'dirty' Squad Menu.
 	RefreshData();
 	UpdateSelection(true);
 
@@ -290,8 +293,9 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 	{
 		// KDM : B button closes the screen.
 		case class'UIUtilities_Input'.static.GetBackButtonInputCode() :
-			// KDM : Even though no squad was selected, the current squad could have been modified via the Squad Management
-			// screen. Therefore, call OnSquadSelected() to guarantee we don't end up with a 'dirty' Squad Select screen.
+			// KDM : Even though no squad was selected, the current squad could have been modified via the 
+			// Squad Management screen. Therefore, call OnSquadSelected to guarantee we don't end up with a 
+			// 'dirty' Squad Select screen.
 			OnSquadSelected(`LWSQUADMGR.LaunchingMissionSquad);
 			break;
 
@@ -318,6 +322,4 @@ defaultproperties
 
 	PanelW = 400;
 	PanelH = 450;
-
-	// KDM REMOVE CachedIndex = -1;
 }

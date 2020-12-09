@@ -46,7 +46,7 @@ static function int ListIndexFromSquadReference(UIList TheList, StateObjectRefer
 	for (i = 0; i < ListSize ; i++)
 	{
 		ListItem = UISquadMenu_ListItem(TheList.GetItem(i));
-		if ((ListItem != none) && (ListItem.SquadRef == SquadRef))
+		if (ListItem != none && ListItem.SquadRef == SquadRef)
 		{
 			return i;
 		}
@@ -62,7 +62,10 @@ static function int SquadsIndexWithSquadReference(StateObjectReference SquadRef)
 	local XComGameState_LWSquadManager SquadManager;
 
 	SquadManager = class'XComGameState_LWSquadManager'.static.GetSquadManager(true);
-	if (SquadManager == none) return -1;
+	if (SquadManager == none)
+	{
+		return -1;
+	}
 
 	for (i = 0; i < SquadManager.Squads.Length; i++)
 	{

@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------
 //	FILE:		UISquadClassItem_ForControllers.uc
-//	AUTHOR:		Amineri
+//	AUTHOR:		Amineri with a modification by KDM
 //	PURPOSE:	UISquadClassItem, with a slight modification to make the icon larger.
 //				This icon represents a soldier in a particular squad.
 //----------------------------------------------------------------------------

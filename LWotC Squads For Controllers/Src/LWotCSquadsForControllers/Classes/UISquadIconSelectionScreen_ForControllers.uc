@@ -1,11 +1,11 @@
 //----------------------------------------------------------------------------
 //	FILE:		UISquadIconSelectionScreen_ForControllers.uc
-//	AUTHOR:		Robojumper
+//	AUTHOR:		Robojumper with a modification by KDM
 //	PURPOSE:	A slight modification of Robojumper's Squad Icon Selector mod.
 //----------------------------------------------------------------------------
 class UISquadIconSelectionScreen_ForControllers extends UIScreen config(SquadSettings);
 
-// Screen reference needed for callbacks.
+// KDM : Screen reference needed for callbacks.
 var UIPersonnel_SquadBarracks_ForControllers BelowScreen;
 
 var config int ScreenW, ScreenH;
@@ -89,7 +89,7 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 			break;
 	}
 
-	return bHandled || super.OnUnrealCommand(cmd, arg);
+	return (bHandled || super.OnUnrealCommand(cmd, arg));
 }
 
 simulated function OnCancel()

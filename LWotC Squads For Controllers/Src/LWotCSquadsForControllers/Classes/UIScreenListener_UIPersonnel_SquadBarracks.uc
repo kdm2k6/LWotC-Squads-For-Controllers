@@ -1,7 +1,8 @@
 //----------------------------------------------------------------------------
 //	FILE:		UIScreenListener_UIPersonnel_SquadBarracks.uc
 //	AUTHOR:		Keith (kdm2k6)
-//	PURPOSE:	A screen listener which replaces the conventional SquadBarracks with a custom, controller-capable one.
+//	PURPOSE:	A screen listener which replaces the conventional Squad Management screen with a custom, 
+//				controller-capable one.
 //----------------------------------------------------------------------------
 class UIScreenListener_UIPersonnel_SquadBarracks extends UIScreenListener;
 

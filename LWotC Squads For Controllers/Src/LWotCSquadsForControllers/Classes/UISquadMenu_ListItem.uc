@@ -5,7 +5,7 @@
 //----------------------------------------------------------------------------
 class UISquadMenu_ListItem extends UIPanel;
 
-// KDM : Reference to a XComGameState_LWPersistentSquad.
+// KDM : Reference to an XComGameState_LWPersistentSquad.
 var StateObjectReference SquadRef; 
 
 var UIList OwningList;
@@ -34,8 +34,9 @@ simulated function InitListItem(optional StateObjectReference _SquadRef, optiona
 {
 	local int ImageSize, TextX, TextWidth;
 
-	// KDM : When used as a separate UI element, to show the current squad, we need to set the squad reference before
-	// calling InitListItem() on a delay. In that case, we don't want to overwrite the squad reference.
+	// KDM : When used as a separate UI element, to show the current squad, we need to set the squad 
+	// reference before calling InitListItem on a delay. In that case, we don't want to overwrite the 
+	// squad reference.
 	if (!IgnoreSquadRef) 
 	{
 		SquadRef = _SquadRef;
@@ -46,7 +47,8 @@ simulated function InitListItem(optional StateObjectReference _SquadRef, optiona
 
 	OwningList = UIList(GetParent(class'UIList'));
 
-	// KDM : If this is a list item, use the list's width; if this is a separate UI element, set the width manually.
+	// KDM : If this is a list item, use the list's width; if this is a separate UI element, set the 
+	// width manually.
 	if (OwningList != none)
 	{
 		SetWidth(OwningList.Width);
@@ -84,7 +86,10 @@ simulated function Update()
 	local XComGameState_LWPersistentSquad SquadState;
 
 	SquadState = XComGameState_LWPersistentSquad(`XCOMHISTORY.GetGameStateForObjectID(SquadRef.ObjectID));
-	if (SquadState == none) return;
+	if (SquadState == none)
+	{
+		return;
+	}
 
 	SquadImage.LoadImage(SquadState.GetSquadImagePath());
 	SquadName = SquadState.sSquadName;
@@ -96,7 +101,7 @@ simulated function UpdateSquadNameText(optional bool ForceUpdate)
 	local int ColourState;
 	local string SquadNameHTML;
 
-	ColourState = (bIsFocused) ? -1 : eUIState_Normal;
+	ColourState = bIsFocused ? -1 : eUIState_Normal;
 	SquadNameHTML = class'UIUtilities_Text'.static.GetColoredText(SquadName, ColourState, TextSize);
 
 	SquadNameText.SetHTMLText(SquadNameHTML, ForceUpdate);
@@ -144,7 +149,7 @@ simulated function bool OnUnrealCommand(int cmd, int arg)
 			break;
 	}
 
-	return bHandled || super.OnUnrealCommand(cmd, arg);
+	return (bHandled || super.OnUnrealCommand(cmd, arg));
 }
 
 defaultproperties

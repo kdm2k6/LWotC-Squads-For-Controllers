@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------
 //	FILE:		UIPersonnel_SquadBarracks_ForControllers.uc
 //	AUTHOR:		Keith (kdm2k6)
-//	PURPOSE:	A custom, controller-capable Squad Management Screen designed 
+//	PURPOSE:	A custom, controller-capable Squad Management screen designed 
 //				nearly from scratch.
 //----------------------------------------------------------------------------
 class UIPersonnel_SquadBarracks_ForControllers extends UIPersonnel config(SquadSettings);
@@ -811,7 +811,7 @@ simulated function OnRemoved()
 
 	SquadMenu = class'Utilities_ForControllers'.static.GetUISquadMenuFromStack();
 	
-	// KDM : We are exiting the Squad Management Screen and heading back to the Squad Menu.
+	// KDM : We are exiting the Squad Management screen and heading back to the Squad Menu.
 	// Save the squad we were looking at, so it can be selected when the Squad Menu receives focus.
 	if (SquadMenu != none)
 	{
@@ -1168,7 +1168,7 @@ simulated function SetInitialCurrentSquadIndex()
 
 	if (SquadsExist())
 	{
-		// KDM : We are entering the Squad Management Screen through : Squad Select --> Squad Menu.
+		// KDM : We are entering the Squad Management screen through : Squad Select --> Squad Menu.
 		// Therefore, select the squad which was last highlighted in the Squad Menu.	
 		if (SquadMenu != none)
 		{
@@ -1176,7 +1176,7 @@ simulated function SetInitialCurrentSquadIndex()
 			CurrentSquadIndex = class'Utilities_ForControllers'.static.SquadsIndexWithSquadReference(
 				SelectedListItem.SquadRef);
 		}
-		// KDM : We are entering the Squad Management Screen through the 'Squad Management' Avenger tab.
+		// KDM : We are entering the Squad Management screen through the 'Squad Management' Avenger tab.
 		// Therefore, select the first squad.
 		else
 		{
