@@ -1114,15 +1114,44 @@ simulated function int GetTotalSquads()
 simulated function SetInitialCurrentSquadIndex()
 {
 	local UISquadMenu SquadMenu;
+	local UISquadMenu_ListItem SelectedListItem;
 
 	SquadMenu = class'Utilities_ForControllers'.static.GetUISquadMenuFromStack();
 
+	if (SquadsExist())
+	{
+		// KDM : We are entering the SquadBarracks through : Squad Select --> Squad Menu.
+		// Therefore, select the squad which was last highlighted in the Squad Menu.	
+		if (SquadMenu != none)
+		{
+			SelectedListItem = UISquadMenu_ListItem(SquadMenu.List.GetSelectedItem());
+			CurrentSquadIndex = class'Utilities_ForControllers'.static.SquadsIndexWithSquadReference(SelectedListItem.SquadRef);
+		}
+		// KDM : We are entering the SquadBarracks through the 'Squad Management' Avenger tab.
+		// Therefore, select the first squad.
+		else
+		{
+			CurrentSquadIndex = 0;
+		}
+	}
+	// KDM : No squads exist so simply set the index to -1.
+	else
+	{
+		CurrentSquadIndex = -1;
+	}
+
+	/*
 	// KDM : If we are entering the SquadBarracks through : Squad Select --> Squad Menu.
 	// In this case, select the squad which was last highlighted in the Squad Menu.	
-	if (SquadMenu != none && SquadMenu.CachedSquad != none)
+	if (SquadMenu != none)
 	{
+		SelectedListItem = 
 		CurrentSquadIndex = SquadsExist() ?
-			class'Utilities_ForControllers'.static.SquadsIndexWithSquadReference(SquadMenu.CachedSquad.GetReference()) : -1;
+			class'Utilities_ForControllers'.static.SquadsIndexWithSquadReference(
+			SquadMenu.CachedSquad.GetReference()) : -1;
+
+		//CurrentSquadIndex = SquadsExist() ?
+		//	class'Utilities_ForControllers'.static.SquadsIndexWithSquadReference(SquadMenu.CachedSquad.GetReference()) : -1;
 
 		// KDM REMOVE CurrentSquadIndex = (SquadsExist()) ? SquadMenu.List.SelectedIndex : -1;
 	}
@@ -1132,6 +1161,7 @@ simulated function SetInitialCurrentSquadIndex()
 	{
 		CurrentSquadIndex = (SquadsExist()) ? 0 : -1;
 	}
+	*/
 }
 
 simulated function ResetTabFocus()
