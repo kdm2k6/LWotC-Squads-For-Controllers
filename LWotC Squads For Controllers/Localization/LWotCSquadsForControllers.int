@@ -1,8 +1,14 @@
+; *************************************************************************************
+; KDM : Localization text for the Squad Menu.
+; *************************************************************************************
 [UISquadMenu]
 TitleStr="Squad Menu"
 SquadManagementStr="OPEN SQUAD MANAGEMENT"
 OpenSquadMenuStr="OPEN SQUAD MENU"
 
+; *************************************************************************************
+; KDM : Localization text for the Squad Management Screen.
+; *************************************************************************************
 [UIPersonnel_SquadBarracks_ForControllers]
 TitleStr="SQUAD [<XGParam:IntValue0>/<XGParam:IntValue1>] : <XGParam:StrValue0>"
 StatusStr = "SQUAD STATUS : <XGParam:StrValue0>"
@@ -30,5 +36,3 @@ ViewAvailableSoldierStr="VIEW AVAILABLE SOLDIERS"
 
 TransferToSquadStr="TRANSFER TO SQUAD"
 RemoveFromSquadStr="REMOVE FROM SQUAD"
-
-
